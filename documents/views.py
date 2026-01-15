@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import FileResponse, Http404
 from django.db.models import Q
+from django.utils import timezone
 from .models import Document
 from .forms import DocumentUploadForm, DocumentUpdateForm, DocumentSearchForm
 from .permissions import can_access_document, get_accessible_documents
@@ -16,9 +17,10 @@ def document_list(request):
     """List documents with search and filter"""
     form = DocumentSearchForm(request.GET)
     
-    # Get base queryset with access control
+    # Get base queryset with access control - exclude archived documents
     documents = Document.objects.select_related('owner').filter(
-        get_accessible_documents(request.user)
+        get_accessible_documents(request.user),
+        is_archived=False
     ).distinct()
     
     # Apply search filters
@@ -165,31 +167,31 @@ def document_update(request, pk):
 @login_required
 @manager_or_admin_required
 def document_delete(request, pk):
-    """Delete a document"""
+    """Archive a document (soft delete)"""
     document = get_object_or_404(Document, pk=pk)
     
-    # Only owner, manager, or admin can delete
+    # Only owner, manager, or admin can archive
     if not (document.owner == request.user or request.user.is_manager or request.user.is_admin):
-        messages.error(request, 'You do not have permission to delete this document.')
+        messages.error(request, 'You do not have permission to archive this document.')
         return redirect('documents:document_detail', pk=pk)
     
     if request.method == 'POST':
         title = document.title
         
-        # Delete the file
-        if os.path.exists(document.file.path):
-            os.remove(document.file.path)
-        
-        document.delete()
+        # Archive the document instead of deleting
+        document.is_archived = True
+        document.archived_at = timezone.now()
+        document.archived_by = request.user
+        document.save()
         
         log_audit(
             request.user,
-            'DOCUMENT_DELETE',
-            f'Deleted document: {title}',
+            'DOCUMENT_ARCHIVE',
+            f'Archived document: {title}',
             request
         )
         
-        messages.success(request, 'Document deleted successfully!')
+        messages.success(request, 'Document archived successfully!')
         return redirect('documents:document_list')
     
     return render(request, 'documents/document_delete.html', {'document': document})

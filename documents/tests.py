@@ -106,6 +106,20 @@ class DocumentAccessTests(TestCase):
         self.client.login(username='user1', password='pass')
         response = self.client.get(reverse('documents:document_upload'))
         self.assertEqual(response.status_code, 200)
+        
+    def test_archived_documents_not_in_list(self):
+        """Test archived documents are not shown in document list"""
+        # Archive a document
+        self.public_doc.is_archived = True
+        self.public_doc.archived_by = self.admin
+        self.public_doc.save()
+        
+        # Login and get document list
+        self.client.login(username='user2', password='pass')
+        response = self.client.get(reverse('documents:document_list'))
+        
+        # Archived document should not be in the list
+        self.assertNotContains(response, self.public_doc.title)
 
 
 class DocumentModelTests(TestCase):
@@ -131,6 +145,7 @@ class DocumentModelTests(TestCase):
         )
         self.assertEqual(doc.title, 'Test Document')
         self.assertEqual(doc.owner, self.user)
+        self.assertFalse(doc.is_archived)
         
     def test_document_tags_list(self):
         """Test document tags parsing"""
@@ -148,4 +163,28 @@ class DocumentModelTests(TestCase):
         self.assertIn('tag1', tags)
         self.assertIn('tag2', tags)
         self.assertIn('tag3', tags)
+        
+    def test_document_archiving(self):
+        """Test document can be archived"""
+        from django.utils import timezone
+        
+        doc = Document.objects.create(
+            title='Test Document',
+            owner=self.user,
+            classification='PUBLIC',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        self.assertFalse(doc.is_archived)
+        
+        # Archive the document
+        doc.is_archived = True
+        doc.archived_by = self.user
+        doc.archived_at = timezone.now()
+        doc.save()
+        
+        self.assertTrue(doc.is_archived)
+        self.assertEqual(doc.archived_by, self.user)
+        self.assertIsNotNone(doc.archived_at)
 

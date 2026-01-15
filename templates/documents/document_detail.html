@@ -92,8 +92,8 @@
                 </a>
                 {% endif %}
                 {% if user.is_manager or user.is_admin %}
-                <a href="{% url 'documents:document_delete' document.pk %}" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> Delete
+                <a href="{% url 'documents:document_delete' document.pk %}" class="btn btn-warning">
+                    <i class="bi bi-archive"></i> Archive
                 </a>
                 {% endif %}
                 <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">

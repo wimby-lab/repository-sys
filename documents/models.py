@@ -41,6 +41,17 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Archive status
+    is_archived = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_documents'
+    )
+    
     # Access control
     shared_with = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -67,5 +78,6 @@ class Document(models.Model):
             models.Index(fields=['owner', 'classification']),
             models.Index(fields=['created_at']),
             models.Index(fields=['category']),
+            models.Index(fields=['is_archived']),
         ]
 
