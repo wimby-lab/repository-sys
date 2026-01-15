@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete {{ document.title }} - Repository System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-trash"></i> Delete Document</h2>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete the following document?</p>
+                <div class="bg-light p-3 rounded">
+                    <h5>{{ document.title }}</h5>
+                    <p class="mb-1"><strong>Owner:</strong> {{ document.owner.username }}</p>
+                    <p class="mb-1"><strong>Classification:</strong> {{ document.get_classification_display }}</p>
+                    <p class="mb-0"><strong>Created:</strong> {{ document.created_at|date:"M d, Y" }}</p>
+                </div>
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Yes, Delete
+                    </button>
+                    <a href="{% url 'documents:document_detail' document.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

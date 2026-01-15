@@ -1,0 +1,151 @@
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from accounts.models import User, Role
+from .models import Document
+from .permissions import can_access_document
+
+
+class DocumentAccessTests(TestCase):
+    """Test document access control"""
+    
+    def setUp(self):
+        self.client = Client()
+        
+        # Create roles
+        self.admin_role = Role.objects.create(name=Role.ADMIN)
+        self.manager_role = Role.objects.create(name=Role.MANAGER)
+        self.user_role = Role.objects.create(name=Role.USER)
+        
+        # Create users
+        self.admin = User.objects.create_user(
+            username='admin',
+            password='pass',
+            role=self.admin_role
+        )
+        self.manager = User.objects.create_user(
+            username='manager',
+            password='pass',
+            role=self.manager_role
+        )
+        self.user1 = User.objects.create_user(
+            username='user1',
+            password='pass',
+            role=self.user_role
+        )
+        self.user2 = User.objects.create_user(
+            username='user2',
+            password='pass',
+            role=self.user_role
+        )
+        
+        # Create test documents
+        self.public_doc = Document.objects.create(
+            title='Public Document',
+            owner=self.user1,
+            classification='PUBLIC',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        
+        self.internal_doc = Document.objects.create(
+            title='Internal Document',
+            owner=self.user1,
+            classification='INTERNAL',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        
+        self.restricted_doc = Document.objects.create(
+            title='Restricted Document',
+            owner=self.user1,
+            classification='RESTRICTED',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        
+    def test_owner_can_access_own_documents(self):
+        """Test document owner can access their own documents"""
+        self.assertTrue(can_access_document(self.user1, self.public_doc))
+        self.assertTrue(can_access_document(self.user1, self.internal_doc))
+        self.assertTrue(can_access_document(self.user1, self.restricted_doc))
+        
+    def test_admin_can_access_all_documents(self):
+        """Test admin can access all documents"""
+        self.assertTrue(can_access_document(self.admin, self.public_doc))
+        self.assertTrue(can_access_document(self.admin, self.internal_doc))
+        self.assertTrue(can_access_document(self.admin, self.restricted_doc))
+        
+    def test_manager_cannot_access_restricted(self):
+        """Test manager cannot access restricted documents"""
+        self.assertTrue(can_access_document(self.manager, self.public_doc))
+        self.assertTrue(can_access_document(self.manager, self.internal_doc))
+        self.assertFalse(can_access_document(self.manager, self.restricted_doc))
+        
+    def test_user_can_access_public_only(self):
+        """Test regular user can only access public documents by default"""
+        self.assertTrue(can_access_document(self.user2, self.public_doc))
+        self.assertFalse(can_access_document(self.user2, self.internal_doc))
+        self.assertFalse(can_access_document(self.user2, self.restricted_doc))
+        
+    def test_shared_document_access(self):
+        """Test user can access documents shared with them"""
+        self.internal_doc.shared_with.add(self.user2)
+        self.assertTrue(can_access_document(self.user2, self.internal_doc))
+        
+    def test_document_upload_requires_login(self):
+        """Test document upload requires authentication"""
+        response = self.client.get(reverse('documents:document_upload'))
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+        
+    def test_authenticated_user_can_upload(self):
+        """Test authenticated user can access upload page"""
+        self.client.login(username='user1', password='pass')
+        response = self.client.get(reverse('documents:document_upload'))
+        self.assertEqual(response.status_code, 200)
+
+
+class DocumentModelTests(TestCase):
+    """Test document model"""
+    
+    def setUp(self):
+        self.user_role = Role.objects.create(name=Role.USER)
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='pass',
+            role=self.user_role
+        )
+        
+    def test_document_creation(self):
+        """Test document can be created"""
+        doc = Document.objects.create(
+            title='Test Document',
+            owner=self.user,
+            classification='PUBLIC',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        self.assertEqual(doc.title, 'Test Document')
+        self.assertEqual(doc.owner, self.user)
+        
+    def test_document_tags_list(self):
+        """Test document tags parsing"""
+        doc = Document.objects.create(
+            title='Test Document',
+            owner=self.user,
+            classification='PUBLIC',
+            tags='tag1, tag2, tag3',
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+        tags = doc.get_tags_list()
+        self.assertEqual(len(tags), 3)
+        self.assertIn('tag1', tags)
+        self.assertIn('tag2', tags)
+        self.assertIn('tag3', tags)
+

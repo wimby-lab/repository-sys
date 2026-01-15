@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Repository System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-house"></i> Dashboard</h2>
+        <p class="text-muted">Welcome, {{ user.get_full_name|default:user.username }}!</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-files"></i> Total Documents
+                </h5>
+                <h2>{{ total_documents }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-person-check"></i> My Documents
+                </h5>
+                <h2>{{ my_documents }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-clock-history"></i> Recent Uploads
+                </h5>
+                <h2>{{ recent_uploads }}</h2>
+                <small>Last 7 days</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-shield-check"></i> Your Role
+                </h5>
+                <h3>{{ user.role|default:"No Role" }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documents by Classification -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i> Documents by Classification
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if docs_by_classification %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Classification</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in docs_by_classification %}
+                        <tr>
+                            <td>
+                                <span class="badge 
+                                    {% if item.classification == 'PUBLIC' %}bg-success
+                                    {% elif item.classification == 'INTERNAL' %}bg-primary
+                                    {% elif item.classification == 'CONFIDENTIAL' %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ item.classification }}
+                                </span>
+                            </td>
+                            <td>{{ item.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No documents available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock"></i> Recent Documents
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_docs %}
+                <div class="list-group list-group-flush">
+                    {% for doc in recent_docs %}
+                    <a href="{% url 'documents:document_detail' doc.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ doc.title }}</h6>
+                            <small>{{ doc.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ doc.owner.username }} | 
+                            <span class="badge bg-secondary">{{ doc.get_classification_display }}</span>
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No recent documents</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity (Admin/Manager only) -->
+{% if recent_activity %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-activity"></i> Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_activity %}
+                            <tr>
+                                <td>{{ log.user.username }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ log.get_action_display }}</span>
+                                </td>
+                                <td>{{ log.description|truncatewords:10 }}</td>
+                                <td>{{ log.timestamp|timesince }} ago</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'documents:document_upload' %}" class="btn btn-primary me-2">
+                    <i class="bi bi-upload"></i> Upload Document
+                </a>
+                <a href="{% url 'documents:document_list' %}" class="btn btn-secondary me-2">
+                    <i class="bi bi-search"></i> Browse Documents
+                </a>
+                {% if user.is_admin or user.is_manager %}
+                <a href="{% url 'reports:document_inventory' %}" class="btn btn-info">
+                    <i class="bi bi-file-earmark-bar-graph"></i> View Reports
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
