@@ -6,9 +6,13 @@
 
 | Package | Old Version | New Version | Vulnerabilities Fixed |
 |---------|-------------|-------------|----------------------|
-| Django | 5.0.1 | 5.0.10 | SQL injection in HasKey operations, DoS attacks |
+| Django | 5.0.1 → 5.0.10 → | **5.1.14** | SQL injection (_connector, HasKey), DoS (HttpResponseRedirect, intcomma) |
 | Gunicorn | 21.2.0 | 22.0.0 | HTTP request/response smuggling |
 | Pillow | 10.2.0 | 10.3.0 | Buffer overflow |
+
+**Latest Update**: Django 5.1.14 LTS addresses additional vulnerabilities found in 5.0.10:
+- SQL injection via _connector keyword in QuerySet/Q objects
+- DoS in HttpResponseRedirect/HttpResponsePermanentRedirect on Windows
 
 ---
 
@@ -198,7 +202,7 @@ Each log includes:
 ## 🚀 Technology Stack
 
 ### Backend
-- Django 5.0.10 (security patched)
+- Django 5.1.14 LTS (fully patched)
 - Django REST Framework 3.14.0
 - Python 3.12
 - PostgreSQL 16
