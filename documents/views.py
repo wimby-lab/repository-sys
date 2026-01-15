@@ -91,6 +91,11 @@ def document_detail(request, pk):
     """View document details"""
     document = get_object_or_404(Document, pk=pk)
     
+    # Check if document is archived
+    if document.is_archived:
+        messages.error(request, 'This document has been archived and is no longer available.')
+        return redirect('documents:document_list')
+    
     # Check access permission
     if not can_access_document(request.user, document):
         messages.error(request, 'You do not have permission to view this document.')
@@ -110,6 +115,11 @@ def document_detail(request, pk):
 def document_download(request, pk):
     """Download a document"""
     document = get_object_or_404(Document, pk=pk)
+    
+    # Check if document is archived
+    if document.is_archived:
+        messages.error(request, 'This document has been archived and cannot be downloaded.')
+        return redirect('documents:document_list')
     
     # Check access permission
     if not can_access_document(request.user, document):
@@ -135,6 +145,11 @@ def document_download(request, pk):
 def document_update(request, pk):
     """Update document metadata"""
     document = get_object_or_404(Document, pk=pk)
+    
+    # Check if document is archived
+    if document.is_archived:
+        messages.error(request, 'This document has been archived and cannot be updated.')
+        return redirect('documents:document_list')
     
     # Only owner, manager, or admin can update
     if not (document.owner == request.user or request.user.is_manager or request.user.is_admin):

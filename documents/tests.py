@@ -120,6 +120,34 @@ class DocumentAccessTests(TestCase):
         
         # Archived document should not be in the list
         self.assertNotContains(response, self.public_doc.title)
+        
+    def test_archived_document_detail_blocked(self):
+        """Test archived documents cannot be accessed via detail view"""
+        # Archive a document
+        self.public_doc.is_archived = True
+        self.public_doc.archived_by = self.admin
+        self.public_doc.save()
+        
+        # Try to access archived document
+        self.client.login(username='user2', password='pass')
+        response = self.client.get(reverse('documents:document_detail', args=[self.public_doc.pk]))
+        
+        # Should redirect with error message
+        self.assertEqual(response.status_code, 302)
+        
+    def test_archived_document_download_blocked(self):
+        """Test archived documents cannot be downloaded"""
+        # Archive a document
+        self.public_doc.is_archived = True
+        self.public_doc.archived_by = self.admin
+        self.public_doc.save()
+        
+        # Try to download archived document
+        self.client.login(username='user2', password='pass')
+        response = self.client.get(reverse('documents:document_download', args=[self.public_doc.pk]))
+        
+        # Should redirect with error message
+        self.assertEqual(response.status_code, 302)
 
 
 class DocumentModelTests(TestCase):
