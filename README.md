@@ -59,10 +59,14 @@ A modern, fully functional, secured document repository management system built 
   - Password reset
   - Role changes
   - Document upload/view/download/update/delete
+- **Security Patches Applied**: All dependencies updated to patched versions
+  - Django 5.0.10 (fixes SQL injection and DoS vulnerabilities)
+  - Gunicorn 22.0.0 (fixes HTTP request smuggling)
+  - Pillow 10.3.0 (fixes buffer overflow)
 
 ## Technology Stack
 
-- **Backend**: Django 5.0.1
+- **Backend**: Django 5.0.10
 - **API**: Django REST Framework 3.14.0
 - **Database**: PostgreSQL 16
 - **Frontend**: Django Templates with Bootstrap 5
