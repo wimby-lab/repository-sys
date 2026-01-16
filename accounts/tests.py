@@ -47,6 +47,10 @@ class AuthenticationTests(TestCase):
         response = self.client.get(reverse('accounts:logout'))
         self.assertEqual(response.status_code, 302)
 
+    def test_login_page_system_name(self):
+        response = self.client.get(reverse('accounts:login'))
+        self.assertContains(response, 'COMSOC Repository System')
+
 
 class RoleBasedAccessTests(TestCase):
     """Test role-based access control"""
@@ -120,4 +124,3 @@ class AuditLogTests(TestCase):
         )
         self.assertEqual(log.user, self.user)
         self.assertEqual(log.action, 'LOGIN')
-

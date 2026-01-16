@@ -1,4 +1,4 @@
-# Repository System - Quick Setup Guide
+# COMSOC Repository System - Quick Setup Guide
 
 ## What Has Been Delivered
 

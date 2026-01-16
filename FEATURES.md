@@ -1,4 +1,4 @@
-# Repository System - Feature Summary
+# COMSOC Repository System - Feature Summary
 
 ## 🛡️ Security Updates - January 2026
 
