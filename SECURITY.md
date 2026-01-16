@@ -2,7 +2,7 @@
 
 ## Overview
 
-All critical security vulnerabilities in the Repository System dependencies have been identified and patched. This document provides a comprehensive summary of the security updates applied.
+All critical security vulnerabilities in the COMSOC Repository System dependencies have been identified and patched. This document provides a comprehensive summary of the security updates applied.
 
 **Latest Update**: Django upgraded to 5.1.14 LTS to address additional vulnerabilities discovered after initial 5.0.10 patch.
 
@@ -268,7 +268,7 @@ For security concerns or questions:
 
 **All identified security vulnerabilities have been successfully patched.**
 
-The Repository System now runs on:
+The COMSOC Repository System now runs on:
 - **Django 5.1.14 LTS** (latest LTS with all security patches)
 - **Gunicorn 22.0.0** (latest stable with security patches)
 - **Pillow 10.3.0** (latest stable with security patches)

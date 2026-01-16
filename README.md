@@ -1,4 +1,4 @@
-# Repository System
+# COMSOC Repository System
 
 A modern, fully functional, secured document repository management system built with Django, PostgreSQL, and Bootstrap 5.
 
