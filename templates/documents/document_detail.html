@@ -39,7 +39,16 @@
                 {% if preview_type == 'image' %}
                     <img src="{% url 'documents:document_preview' document.pk %}" class="img-fluid border rounded" alt="{{ document.title }} preview">
                 {% elif preview_type == 'pdf' %}
-                    <iframe src="{% url 'documents:document_preview' document.pk %}" class="w-100 border rounded" style="height: 600px;" title="{{ document.title }} preview"></iframe>
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{% url 'documents:document_preview' document.pk %}" class="w-100 border rounded" title="{{ document.title }} preview"></iframe>
+                    </div>
+                {% elif preview_type == 'office' %}
+                    <div class="alert alert-secondary d-flex justify-content-between align-items-center flex-wrap">
+                        <span>Office file preview is not available in the browser. Please download to view.</span>
+                        <a href="{% url 'documents:document_download' document.pk %}" class="btn btn-sm btn-outline-primary mt-2 mt-sm-0">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </div>
                 {% else %}
                     <div class="alert alert-secondary d-flex justify-content-between align-items-center flex-wrap">
                         <span>Preview is not available for this file type. Please download to view.</span>

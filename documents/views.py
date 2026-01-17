@@ -125,11 +125,11 @@ def document_detail(request, pk):
     )
     
     file_extension = document.get_file_extension()
-    if file_extension in {'.pdf'}:
+    if file_extension in ('.pdf',):
         preview_type = 'pdf'
-    elif file_extension in {'.jpg', '.jpeg', '.png'}:
+    elif file_extension in ('.jpg', '.jpeg', '.png'):
         preview_type = 'image'
-    elif file_extension in {'.doc', '.docx', '.xls', '.xlsx'}:
+    elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
         preview_type = 'office'
     else:
         preview_type = 'unsupported'
