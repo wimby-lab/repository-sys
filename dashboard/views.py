@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from documents.models import Document
 from documents.permissions import get_accessible_documents
-from accounts.models import AuditLog
-from django.db.models import Count, Q
+from accounts.models import AuditLog, Role, User
+from django.db.models import Count, Prefetch, Q
 from datetime import timedelta
 from django.utils import timezone
 
@@ -40,6 +40,14 @@ def index(request):
     recent_activity = None
     if user.is_adviser or user.is_president:
         recent_activity = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
+
+    current_date = timezone.localtime(timezone.now())
+    school_year_start = current_date.year if current_date.month >= 6 else current_date.year - 1
+    school_year_label = f"{school_year_start}-{school_year_start + 1}"
+
+    officer_roles = Role.objects.prefetch_related(
+        Prefetch('users', queryset=User.objects.order_by('last_name', 'first_name', 'username'))
+    ).filter(users__isnull=False).distinct()
     
     context = {
         'total_documents': total_documents,
@@ -48,6 +56,8 @@ def index(request):
         'recent_docs': recent_docs,
         'docs_by_classification': docs_by_classification,
         'recent_activity': recent_activity,
+        'officer_roles': officer_roles,
+        'school_year_label': school_year_label,
     }
     
     return render(request, 'dashboard/index.html', context)

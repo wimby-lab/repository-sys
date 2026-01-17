@@ -55,6 +55,46 @@
     </div>
 </div>
 
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people"></i> COMSOC Officers S.Y. {{ school_year_label }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if officer_roles %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Officer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for role in officer_roles %}
+                            <tr>
+                                <td>{{ role.get_name_display }}</td>
+                                <td>
+                                    {% for officer in role.users.all %}
+                                        {{ officer.get_full_name|default:officer.username }}{% if not forloop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No officer assignments yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Documents by Classification -->
 <div class="row mb-4">
     <div class="col-md-6">
