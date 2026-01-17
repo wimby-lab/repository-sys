@@ -114,6 +114,31 @@ class RoleBasedAccessTests(TestCase):
         )
         self.assertTrue(unassigned.is_regular_user)
 
+    def test_adviser_can_toggle_user_active(self):
+        """Test adviser can deactivate another user"""
+        self.client.login(username='admin', password='pass')
+        response = self.client.post(reverse('accounts:toggle_user_active', args=[self.user.id]))
+        self.assertRedirects(response, reverse('accounts:role_management'))
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertTrue(AuditLog.objects.filter(user=self.admin, action='ACCOUNT_DEACTIVATE').exists())
+
+    def test_adviser_cannot_toggle_own_active_status(self):
+        """Test adviser cannot deactivate self"""
+        self.client.login(username='admin', password='pass')
+        response = self.client.post(reverse('accounts:toggle_user_active', args=[self.admin.id]))
+        self.assertRedirects(response, reverse('accounts:role_management'))
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_officer_cannot_toggle_user_active(self):
+        """Test officer cannot deactivate users"""
+        self.client.login(username='user', password='pass')
+        response = self.client.post(reverse('accounts:toggle_user_active', args=[self.manager.id]))
+        self.assertRedirects(response, reverse('dashboard:index'))
+        self.manager.refresh_from_db()
+        self.assertTrue(self.manager.is_active)
+
 
 class AuditLogTests(TestCase):
     """Test audit logging"""

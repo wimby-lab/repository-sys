@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -103,3 +103,35 @@ def role_management(request):
         'form': form,
         'users': users
     })
+
+
+@login_required
+@admin_required
+@require_http_methods(['POST'])
+def toggle_user_active(request, user_id):
+    """Toggle user active status (admin only)"""
+    user = get_object_or_404(User, pk=user_id)
+
+    if user == request.user:
+        messages.error(request, 'You cannot change the status of your own account.')
+        return redirect('accounts:role_management')
+
+    if user.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'You cannot change the status of a superuser account.')
+        return redirect('accounts:role_management')
+
+    user.is_active = not user.is_active
+    user.save(update_fields=['is_active'])
+
+    action = 'ACCOUNT_ACTIVATE' if user.is_active else 'ACCOUNT_DEACTIVATE'
+    status_label = 'activated' if user.is_active else 'deactivated'
+
+    log_audit(
+        request.user,
+        action,
+        f'{status_label.title()} account for {user.username}',
+        request
+    )
+
+    messages.success(request, f'Account for {user.username} {status_label}.')
+    return redirect('accounts:role_management')

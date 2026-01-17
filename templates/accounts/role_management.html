@@ -41,6 +41,7 @@
                                 <th>Role</th>
                                 <th>Staff</th>
                                 <th>Active</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,6 +68,22 @@
                                         <span class="badge bg-success">Active</span>
                                     {% else %}
                                         <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user == request.user %}
+                                        <span class="text-muted">Current User</span>
+                                    {% else %}
+                                        <form method="post" action="{% url 'accounts:toggle_user_active' user.id %}">
+                                            {% csrf_token %}
+                                            {% if user.is_active %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ user.username }}?');">
+                                                    Deactivate
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                                            {% endif %}
+                                        </form>
                                     {% endif %}
                                 </td>
                             </tr>

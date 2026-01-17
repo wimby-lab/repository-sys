@@ -132,6 +132,8 @@ class AuditLog(models.Model):
         ('REGISTER', 'Register'),
         ('PASSWORD_RESET', 'Password Reset'),
         ('ROLE_CHANGE', 'Role Change'),
+        ('ACCOUNT_ACTIVATE', 'Account Activate'),
+        ('ACCOUNT_DEACTIVATE', 'Account Deactivate'),
         ('DOCUMENT_UPLOAD', 'Document Upload'),
         ('DOCUMENT_VIEW', 'Document View'),
         ('DOCUMENT_DOWNLOAD', 'Document Download'),
