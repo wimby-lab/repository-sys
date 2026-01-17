@@ -20,7 +20,7 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # New users register without roles and are treated as regular officers until an adviser assigns a role.
+            # New users register without roles and default to regular-user permissions (own/shared/public documents) until an adviser assigns a role.
             user.save()
             
             log_audit(user, 'REGISTER', f'New user registered: {user.username}', request)

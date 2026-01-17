@@ -48,7 +48,7 @@ class Role(models.Model):
         (BSCS_4B_REPRESENTATIVE, 'BSCS 4B Representative'),
     ]
 
-    REGULAR_ROLES = {
+    REGULAR_ROLES = frozenset({
         VICE_PRESIDENT,
         SECRETARY,
         ASSISTANT_SECRETARY,
@@ -67,7 +67,7 @@ class Role(models.Model):
         BSCS_3B_REPRESENTATIVE,
         BSCS_4A_REPRESENTATIVE,
         BSCS_4B_REPRESENTATIVE,
-    }
+    })
     
     name = models.CharField(max_length=50, choices=ROLE_CHOICES, unique=True)
     description = models.TextField(blank=True)
