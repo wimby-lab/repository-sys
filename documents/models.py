@@ -5,7 +5,10 @@ import os
 
 def document_upload_path(instance, filename):
     """Generate upload path for documents"""
-    return f'documents/{instance.classification}/{instance.owner.username}/{filename}'
+    return (
+        f'documents/{instance.section}/{instance.classification}/'
+        f'{instance.owner.username}/{filename}'
+    )
 
 
 class Document(models.Model):
@@ -15,6 +18,14 @@ class Document(models.Model):
         ('INTERNAL', 'Internal'),
         ('CONFIDENTIAL', 'Confidential'),
         ('RESTRICTED', 'Restricted'),
+    ]
+    SECTION_CHOICES = [
+        ('GENERAL', 'General'),
+        ('POLICIES', 'Policies'),
+        ('PROCEDURES', 'Procedures'),
+        ('FORMS', 'Forms'),
+        ('REPORTS', 'Reports'),
+        ('TEMPLATES', 'Templates'),
     ]
     
     title = models.CharField(max_length=255)
@@ -33,6 +44,11 @@ class Document(models.Model):
         max_length=20,
         choices=CLASSIFICATION_CHOICES,
         default='INTERNAL'
+    )
+    section = models.CharField(
+        max_length=50,
+        choices=SECTION_CHOICES,
+        default='GENERAL'
     )
     category = models.CharField(max_length=100, blank=True)
     tags = models.CharField(max_length=255, blank=True, help_text="Comma-separated tags")
@@ -79,5 +95,5 @@ class Document(models.Model):
             models.Index(fields=['created_at']),
             models.Index(fields=['category']),
             models.Index(fields=['is_archived']),
+            models.Index(fields=['section']),
         ]
-

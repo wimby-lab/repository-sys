@@ -149,6 +149,25 @@ class DocumentAccessTests(TestCase):
         # Should redirect with error message
         self.assertEqual(response.status_code, 302)
 
+    def test_document_list_filters_by_section(self):
+        """Test document list can be filtered by section"""
+        section_value = Document.SECTION_CHOICES[1][0]
+        section_doc = Document.objects.create(
+            title='Section Document',
+            owner=self.user1,
+            classification='PUBLIC',
+            section=section_value,
+            file='test.txt',
+            file_type='text/plain',
+            file_size=100
+        )
+
+        self.client.login(username='user1', password='pass')
+        response = self.client.get(reverse('documents:document_list'), {'section': section_value})
+
+        self.assertContains(response, section_doc.title)
+        self.assertNotContains(response, self.public_doc.title)
+
 
 class DocumentModelTests(TestCase):
     """Test document model"""
@@ -173,6 +192,7 @@ class DocumentModelTests(TestCase):
         )
         self.assertEqual(doc.title, 'Test Document')
         self.assertEqual(doc.owner, self.user)
+        self.assertEqual(doc.section, Document.SECTION_CHOICES[0][0])
         self.assertFalse(doc.is_archived)
         
     def test_document_tags_list(self):

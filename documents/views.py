@@ -1,7 +1,12 @@
+import os
+from itertools import groupby
+from urllib.parse import quote
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import FileResponse, Http404
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db.models import Q
 from django.utils import timezone
 from .models import Document
@@ -9,7 +14,6 @@ from .forms import DocumentUploadForm, DocumentUpdateForm, DocumentSearchForm
 from .permissions import can_access_document, get_accessible_documents
 from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
-import os
 
 
 @login_required
@@ -36,6 +40,10 @@ def document_list(request):
         classification = form.cleaned_data.get('classification')
         if classification:
             documents = documents.filter(classification=classification)
+
+        section = form.cleaned_data.get('section')
+        if section:
+            documents = documents.filter(section=section)
         
         category = form.cleaned_data.get('category')
         if category:
@@ -52,9 +60,25 @@ def document_list(request):
         date_to = form.cleaned_data.get('date_to')
         if date_to:
             documents = documents.filter(created_at__lte=date_to)
-    
+
+    documents = documents.order_by('section', '-created_at')
+    documents_count = documents.count()
+    section_map = {}
+    for section_value, section_documents in groupby(documents, key=lambda doc: doc.section):
+        section_map[section_value] = list(section_documents)
+
+    documents_by_section = []
+    for section_value, section_label in Document.SECTION_CHOICES:
+        section_documents = section_map.get(section_value, [])
+        if section_documents:
+            documents_by_section.append({
+                'label': section_label,
+                'documents': section_documents
+            })
+
     return render(request, 'documents/document_list.html', {
-        'documents': documents,
+        'documents_by_section': documents_by_section,
+        'documents_count': documents_count,
         'form': form
     })
 
@@ -108,7 +132,48 @@ def document_detail(request, pk):
         request
     )
     
-    return render(request, 'documents/document_detail.html', {'document': document})
+    file_extension = document.get_file_extension()
+    if file_extension == '.pdf':
+        preview_type = 'pdf'
+    elif file_extension in ('.jpg', '.jpeg', '.png'):
+        preview_type = 'image'
+    elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
+        preview_type = 'office'
+    else:
+        preview_type = 'unsupported'
+
+    return render(request, 'documents/document_detail.html', {
+        'document': document,
+        'preview_type': preview_type
+    })
+
+
+@login_required
+@xframe_options_sameorigin
+def document_preview(request, pk):
+    """Preview a document inline"""
+    document = get_object_or_404(Document, pk=pk)
+
+    if document.is_archived:
+        messages.error(request, 'This document has been archived and is no longer available.')
+        return redirect('documents:document_list')
+
+    if not can_access_document(request.user, document):
+        messages.error(request, 'You do not have permission to view this document.')
+        return redirect('documents:document_list')
+
+    file_extension = document.get_file_extension()
+    if file_extension not in ('.pdf', '.jpg', '.jpeg', '.png'):
+        messages.info(request, 'Inline preview is not available for this file type.')
+        return redirect('documents:document_detail', pk=pk)
+
+    if os.path.exists(document.file.path):
+        response = FileResponse(document.file.open('rb'), content_type=document.file_type)
+        filename = quote(os.path.basename(document.file.name))
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+
+    raise Http404("Document file not found")
 
 
 @login_required

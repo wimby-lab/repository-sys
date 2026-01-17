@@ -28,6 +28,10 @@
                         {{ form.classification }}
                     </div>
                     <div class="col-md-2">
+                        {{ form.section.label_tag }}
+                        {{ form.section }}
+                    </div>
+                    <div class="col-md-2">
                         {{ form.category.label_tag }}
                         {{ form.category }}
                     </div>
@@ -56,62 +60,65 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Document List ({{ documents.count }} total)</h5>
+                <h5 class="card-title mb-0">Document List ({{ documents_count }} total)</h5>
                 <a href="{% url 'documents:document_upload' %}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-circle"></i> Upload New
                 </a>
             </div>
             <div class="card-body">
-                {% if documents %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Owner</th>
-                                <th>Classification</th>
-                                <th>Category</th>
-                                <th>Size</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in documents %}
-                            <tr>
-                                <td>
-                                    <a href="{% url 'documents:document_detail' doc.pk %}">
-                                        <i class="bi bi-file-earmark"></i> {{ doc.title }}
-                                    </a>
-                                </td>
-                                <td>{{ doc.owner.username }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if doc.classification == 'PUBLIC' %}bg-success
-                                        {% elif doc.classification == 'INTERNAL' %}bg-primary
-                                        {% elif doc.classification == 'CONFIDENTIAL' %}bg-warning
-                                        {% else %}bg-danger{% endif %}">
-                                        {{ doc.get_classification_display }}
-                                    </span>
-                                </td>
-                                <td>{{ doc.category|default:"-" }}</td>
-                                <td>{{ doc.file_size|filesizeformat }}</td>
-                                <td>{{ doc.created_at|date:"M d, Y" }}</td>
-                                <td>
-                                    <a href="{% url 'documents:document_detail' doc.pk %}" class="btn btn-sm btn-info" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{% url 'documents:document_download' doc.pk %}" class="btn btn-sm btn-success" title="Download">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% if documents_by_section %}
+                    {% for section in documents_by_section %}
+                    <h6 class="mt-3">{{ section.label }}</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Owner</th>
+                                    <th>Classification</th>
+                                    <th>Category</th>
+                                    <th>Size</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in section.documents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'documents:document_detail' doc.pk %}">
+                                            <i class="bi bi-file-earmark"></i> {{ doc.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ doc.owner.username }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if doc.classification == 'PUBLIC' %}bg-success
+                                            {% elif doc.classification == 'INTERNAL' %}bg-primary
+                                            {% elif doc.classification == 'CONFIDENTIAL' %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ doc.get_classification_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ doc.category|default:"-" }}</td>
+                                    <td>{{ doc.file_size|filesizeformat }}</td>
+                                    <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'documents:document_detail' doc.pk %}" class="btn btn-sm btn-info" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'documents:document_download' doc.pk %}" class="btn btn-sm btn-success" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
                 {% else %}
-                <p class="text-muted text-center py-4">No documents found</p>
+                    <p class="text-muted text-center py-4">No documents found</p>
                 {% endif %}
             </div>
         </div>

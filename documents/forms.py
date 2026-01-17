@@ -8,7 +8,7 @@ class DocumentUploadForm(forms.ModelForm):
     """Form for uploading documents"""
     class Meta:
         model = Document
-        fields = ['title', 'description', 'file', 'classification', 'category', 'tags']
+        fields = ['title', 'description', 'file', 'classification', 'section', 'category', 'tags']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'tags': forms.TextInput(attrs={'placeholder': 'Enter tags separated by commas'}),
@@ -46,7 +46,7 @@ class DocumentUpdateForm(forms.ModelForm):
     """Form for updating document metadata"""
     class Meta:
         model = Document
-        fields = ['title', 'description', 'classification', 'category', 'tags']
+        fields = ['title', 'description', 'classification', 'section', 'category', 'tags']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'tags': forms.TextInput(attrs={'placeholder': 'Enter tags separated by commas'}),
@@ -68,6 +68,10 @@ class DocumentSearchForm(forms.Form):
     )
     classification = forms.ChoiceField(
         choices=[('', 'All Classifications')] + Document.CLASSIFICATION_CHOICES,
+        required=False
+    )
+    section = forms.ChoiceField(
+        choices=[('', 'All Sections')] + Document.SECTION_CHOICES,
         required=False
     )
     category = forms.CharField(
