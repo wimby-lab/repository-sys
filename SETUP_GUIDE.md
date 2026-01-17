@@ -14,11 +14,11 @@ A complete, modern, production-ready **Document Repository Management System** w
 - Password hashing using PBKDF2 algorithm
 
 #### 2. **Authorization & RBAC**
-- Three-tier role system:
-  - **Admin**: Full system access, user/role management
-  - **Manager**: Document management, reporting capabilities
-  - **User**: Basic document access
-- Role assignment UI for admins
+- Officer role system:
+  - **Adviser**: Full system access, user/role management
+  - **President**: Document management, reporting capabilities
+  - **Officers/Representatives**: Basic document access
+- Role assignment UI for advisers
 - Decorator-based permission checks
 - Fine-grained document access control
 
@@ -62,9 +62,9 @@ A complete, modern, production-ready **Document Repository Management System** w
   - User registration
   - Login/logout
   - Role-based access control
-  - Admin-only features
+  - Adviser-only features
   - Document access rules
-  - Owner, admin, manager permissions
+  - Owner, adviser, president permissions
 - ✅ All tests passing
 
 #### 8. **Modern UI**
@@ -110,11 +110,11 @@ A complete, modern, production-ready **Document Repository Management System** w
    docker compose exec web python manage.py init_roles
    ```
 
-5. **Create Admin User**
+5. **Create Adviser User**
    ```bash
    docker compose exec web python manage.py createsuperuser
    ```
-   Follow prompts to create your admin account.
+   Follow prompts to create your adviser account.
 
 6. **Access the Application**
    - Main app: http://localhost:8000
@@ -124,10 +124,10 @@ A complete, modern, production-ready **Document Repository Management System** w
 
 1. **Login** with superuser credentials
 2. **Navigate to Admin Panel** (/admin)
-3. **Assign yourself the Admin role**:
+3. **Assign yourself the Adviser role**:
    - Go to Users
    - Edit your user
-   - Select "ADMIN" from role dropdown
+   - Select "ADVISER" from role dropdown
    - Save
 4. **Return to main app** and access all features
 
@@ -145,11 +145,11 @@ docker compose exec web python manage.py test documents
 
 ### Manual Testing Checklist
 
-1. **Register a new user** → Should create account with USER role
-2. **Login as regular user** → Limited access
+1. **Register a new user** → Should create account pending role assignment
+2. **Login as regular officer** → Limited access
 3. **Upload a document** → Should succeed
-4. **Try accessing admin features** → Should be blocked
-5. **Login as admin** → Full access
+4. **Try accessing adviser features** → Should be blocked
+5. **Login as adviser** → Full access
 6. **Assign roles** → Test different permission levels
 7. **Create documents** with different classifications
 8. **Test search/filter** functionality

@@ -26,10 +26,10 @@
 - ✓ Session Management with Security Cookies
 
 ### 2. Role-Based Access Control (RBAC) ✅
-- ✓ **Admin Role**: Full system access, user/role management
-- ✓ **Manager Role**: Document management, reporting access
-- ✓ **User Role**: Basic document access
-- ✓ Admin UI for role assignment
+- ✓ **Adviser Role**: Full system access, user/role management
+- ✓ **President Role**: Document management, reporting access
+- ✓ **Officer/Representative Roles**: Basic document access
+- ✓ Adviser UI for role assignment
 - ✓ Decorator-based permission checks (`@admin_required`, `@manager_or_admin_required`)
 
 ### 3. Dashboard ✅
@@ -51,9 +51,9 @@
 
 #### Classification Levels
 - ✓ **PUBLIC**: Accessible by all authenticated users
-- ✓ **INTERNAL**: Accessible by owner, shared users, managers, admins
-- ✓ **CONFIDENTIAL**: Accessible by owner, shared users, admins
-- ✓ **RESTRICTED**: Accessible only by owner and admins
+- ✓ **INTERNAL**: Accessible by owner, shared users, presidents, advisers
+- ✓ **CONFIDENTIAL**: Accessible by owner, shared users, advisers
+- ✓ **RESTRICTED**: Accessible only by owner and advisers
 
 #### Access Control
 - ✓ Server-side enforcement
@@ -133,8 +133,8 @@ Each log includes:
 ### 9. Database Schema ✅
 #### Users & Roles
 - ✓ Extended User model with role relationship
-- ✓ Role model (Admin, Manager, User)
-- ✓ User properties: `is_admin`, `is_manager`, `is_regular_user`
+- ✓ Role model (Adviser, President, Officers/Representatives)
+- ✓ User properties: `is_adviser`, `is_president`, `is_regular_user` (aliases: `is_admin`, `is_manager`)
 
 #### Documents
 - ✓ Document model with full metadata
@@ -161,16 +161,16 @@ Each log includes:
 - ✓ User logout
 
 #### RBAC Tests (4)
-- ✓ Admin can access role management
-- ✓ Regular user cannot access role management
-- ✓ Role properties (is_admin, is_manager, is_regular_user)
+- ✓ Adviser can access role management
+- ✓ Regular officer cannot access role management
+- ✓ Role properties (is_adviser, is_president, is_regular_user)
 - ✓ Audit log creation
 
 #### Document Access Tests (7)
 - ✓ Owner can access own documents
-- ✓ Admin can access all documents
-- ✓ Manager cannot access restricted
-- ✓ User can only access public by default
+- ✓ Adviser can access all documents
+- ✓ President cannot access restricted
+- ✓ Officer can only access public by default
 - ✓ Shared document access
 - ✓ Upload requires login
 - ✓ Authenticated user can upload
@@ -181,8 +181,8 @@ Each log includes:
 
 ## 📊 Permission Matrix
 
-| Feature | Admin | Manager | User |
-|---------|-------|---------|------|
+| Feature | Adviser | President | Officer/Representative |
+|---------|---------|-----------|------------------------|
 | View own documents | ✅ | ✅ | ✅ |
 | Upload documents | ✅ | ✅ | ✅ |
 | View public documents | ✅ | ✅ | ✅ |

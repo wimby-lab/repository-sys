@@ -12,11 +12,13 @@ A modern, fully functional, secured document repository management system built 
 - Session security with HTTP-only cookies
 
 ### Authorization & Role Management
-- Role-based access control (RBAC) with three default roles:
-  - **Admin**: Full system access, can manage users and roles
-  - **Manager**: Can manage documents and access most features
-  - **User**: Basic document access
-- Admin UI for assigning roles to users
+- Role-based access control (RBAC) with COMSOC officer roles:
+  - **Adviser**: Superuser with full system access
+  - **President**: Broad access to documents and reports
+  - **Vice President**, **Secretary**, **Assistant Secretary**, **Treasurer**, **Assistant Treasurer**
+  - **Auditor**, **Business Manager**, **PIO**, **Athletic Manager (Male/Female)**
+  - **BSCS 1A/1B/2A/2B/3A/3B/4A/4B Representatives**
+- Adviser UI for assigning roles to users
 - Role-based document access control
 
 ### Dashboard
@@ -24,7 +26,7 @@ A modern, fully functional, secured document repository management system built 
 - Document count statistics
 - Recent uploads tracking
 - Documents by classification breakdown
-- Recent activity log (for admins/managers)
+- Recent activity log (for advisers/presidents)
 
 ### Document Repository
 - **Upload documents** with metadata (title, description, category, tags)
@@ -138,7 +140,7 @@ Create a superuser account:
 docker-compose exec web python manage.py createsuperuser
 ```
 
-Follow the prompts to create your admin account.
+Follow the prompts to create your adviser account.
 
 ### 5. Access the Application
 
@@ -169,9 +171,9 @@ docker-compose exec web python manage.py test documents
 ### First Steps
 
 1. **Register a new account** or login with the superuser account created earlier
-2. **Assign roles** (Admin only):
+2. **Assign roles** (Adviser only):
    - Navigate to "Roles" in the navigation bar
-   - Select a user and assign them a role (Admin, Manager, or User)
+   - Select a user and assign them a role (Adviser, President, or Officer/Representative)
 3. **Upload documents**:
    - Click "Upload" in the navigation bar
    - Fill in document details and select a file
@@ -182,18 +184,20 @@ docker-compose exec web python manage.py test documents
 
 ### User Roles & Permissions
 
-#### Admin
+New registrations start without a role and default to officer-level access until an adviser assigns a role.
+
+#### Adviser
 - Full access to all documents
 - Can manage user roles
 - Can view all reports
 - Can delete any document
 
-#### Manager
+#### President
 - Access to all documents except Restricted
 - Can view reports
 - Can delete documents
 
-#### User
+#### Officers & Representatives
 - Access to own documents
 - Access to documents shared with them
 - Access to Public documents
@@ -202,9 +206,9 @@ docker-compose exec web python manage.py test documents
 ### Document Classification Levels
 
 - **Public**: Accessible by all authenticated users
-- **Internal**: Accessible by owner, shared users, managers, and admins
-- **Confidential**: Accessible by owner, shared users, and admins
-- **Restricted**: Accessible only by owner and admins
+- **Internal**: Accessible by owner, shared users, presidents, and advisers
+- **Confidential**: Accessible by owner, shared users, and advisers
+- **Restricted**: Accessible only by owner and advisers
 
 ## Project Structure
 

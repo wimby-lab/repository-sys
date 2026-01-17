@@ -152,7 +152,7 @@ def document_update(request, pk):
         return redirect('documents:document_list')
     
     # Only owner, manager, or admin can update
-    if not (document.owner == request.user or request.user.is_manager or request.user.is_admin):
+    if not (document.owner == request.user or request.user.is_president or request.user.is_adviser):
         messages.error(request, 'You do not have permission to update this document.')
         return redirect('documents:document_detail', pk=pk)
     
@@ -186,7 +186,7 @@ def document_delete(request, pk):
     document = get_object_or_404(Document, pk=pk)
     
     # Only owner, manager, or admin can archive
-    if not (document.owner == request.user or request.user.is_manager or request.user.is_admin):
+    if not (document.owner == request.user or request.user.is_president or request.user.is_adviser):
         messages.error(request, 'You do not have permission to archive this document.')
         return redirect('documents:document_detail', pk=pk)
     
@@ -210,4 +210,3 @@ def document_delete(request, pk):
         return redirect('documents:document_list')
     
     return render(request, 'documents/document_delete.html', {'document': document})
-

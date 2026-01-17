@@ -36,9 +36,9 @@ def index(request):
         count=Count('id')
     ).order_by('classification')
     
-    # Recent activity (if admin or manager)
+    # Recent activity (if adviser or president)
     recent_activity = None
-    if user.is_admin or user.is_manager:
+    if user.is_adviser or user.is_president:
         recent_activity = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
     
     context = {
@@ -51,4 +51,3 @@ def index(request):
     }
     
     return render(request, 'dashboard/index.html', context)
-

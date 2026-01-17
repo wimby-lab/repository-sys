@@ -20,9 +20,7 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # Assign default USER role
-            user_role, _ = Role.objects.get_or_create(name=Role.USER)
-            user.role = user_role
+            # New users register without roles and default to regular-user permissions (own/shared/public documents) until an adviser assigns a role.
             user.save()
             
             log_audit(user, 'REGISTER', f'New user registered: {user.username}', request)
@@ -105,4 +103,3 @@ def role_management(request):
         'form': form,
         'users': users
     })
-

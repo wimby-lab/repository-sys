@@ -4,17 +4,72 @@ from django.db import models
 
 class Role(models.Model):
     """Role model for RBAC"""
-    ADMIN = 'ADMIN'
-    MANAGER = 'MANAGER'
-    USER = 'USER'
+    ADVISER = 'ADVISER'
+    PRESIDENT = 'PRESIDENT'
+    VICE_PRESIDENT = 'VICE_PRESIDENT'
+    SECRETARY = 'SECRETARY'
+    ASSISTANT_SECRETARY = 'ASSISTANT_SECRETARY'
+    TREASURER = 'TREASURER'
+    ASSISTANT_TREASURER = 'ASSISTANT_TREASURER'
+    AUDITOR = 'AUDITOR'
+    BUSINESS_MANAGER = 'BUSINESS_MANAGER'
+    PIO = 'PIO'
+    ATHLETIC_MANAGER_MALE = 'ATHLETIC_MANAGER_MALE'
+    ATHLETIC_MANAGER_FEMALE = 'ATHLETIC_MANAGER_FEMALE'
+    BSCS_1A_REPRESENTATIVE = 'BSCS_1A_REPRESENTATIVE'
+    BSCS_1B_REPRESENTATIVE = 'BSCS_1B_REPRESENTATIVE'
+    BSCS_2A_REPRESENTATIVE = 'BSCS_2A_REPRESENTATIVE'
+    BSCS_2B_REPRESENTATIVE = 'BSCS_2B_REPRESENTATIVE'
+    BSCS_3A_REPRESENTATIVE = 'BSCS_3A_REPRESENTATIVE'
+    BSCS_3B_REPRESENTATIVE = 'BSCS_3B_REPRESENTATIVE'
+    BSCS_4A_REPRESENTATIVE = 'BSCS_4A_REPRESENTATIVE'
+    BSCS_4B_REPRESENTATIVE = 'BSCS_4B_REPRESENTATIVE'
     
     ROLE_CHOICES = [
-        (ADMIN, 'Admin'),
-        (MANAGER, 'Manager'),
-        (USER, 'User'),
+        (ADVISER, 'Adviser'),
+        (PRESIDENT, 'President'),
+        (VICE_PRESIDENT, 'Vice President'),
+        (SECRETARY, 'Secretary'),
+        (ASSISTANT_SECRETARY, 'Assistant Secretary'),
+        (TREASURER, 'Treasurer'),
+        (ASSISTANT_TREASURER, 'Assistant Treasurer'),
+        (AUDITOR, 'Auditor'),
+        (BUSINESS_MANAGER, 'Business Manager'),
+        (PIO, 'PIO'),
+        (ATHLETIC_MANAGER_MALE, 'Athletic Manager (Male)'),
+        (ATHLETIC_MANAGER_FEMALE, 'Athletic Manager (Female)'),
+        (BSCS_1A_REPRESENTATIVE, 'BSCS 1A Representative'),
+        (BSCS_1B_REPRESENTATIVE, 'BSCS 1B Representative'),
+        (BSCS_2A_REPRESENTATIVE, 'BSCS 2A Representative'),
+        (BSCS_2B_REPRESENTATIVE, 'BSCS 2B Representative'),
+        (BSCS_3A_REPRESENTATIVE, 'BSCS 3A Representative'),
+        (BSCS_3B_REPRESENTATIVE, 'BSCS 3B Representative'),
+        (BSCS_4A_REPRESENTATIVE, 'BSCS 4A Representative'),
+        (BSCS_4B_REPRESENTATIVE, 'BSCS 4B Representative'),
     ]
+
+    REGULAR_ROLES = frozenset({
+        VICE_PRESIDENT,
+        SECRETARY,
+        ASSISTANT_SECRETARY,
+        TREASURER,
+        ASSISTANT_TREASURER,
+        AUDITOR,
+        BUSINESS_MANAGER,
+        PIO,
+        ATHLETIC_MANAGER_MALE,
+        ATHLETIC_MANAGER_FEMALE,
+        BSCS_1A_REPRESENTATIVE,
+        BSCS_1B_REPRESENTATIVE,
+        BSCS_2A_REPRESENTATIVE,
+        BSCS_2B_REPRESENTATIVE,
+        BSCS_3A_REPRESENTATIVE,
+        BSCS_3B_REPRESENTATIVE,
+        BSCS_4A_REPRESENTATIVE,
+        BSCS_4B_REPRESENTATIVE,
+    })
     
-    name = models.CharField(max_length=20, choices=ROLE_CHOICES, unique=True)
+    name = models.CharField(max_length=50, choices=ROLE_CHOICES, unique=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -42,16 +97,28 @@ class User(AbstractUser):
         return self.username
     
     @property
-    def is_admin(self):
-        return self.role and self.role.name == Role.ADMIN
+    def is_adviser(self):
+        return self.role and self.role.name == Role.ADVISER
     
     @property
+    def is_president(self):
+        return self.role and self.role.name == Role.PRESIDENT
+
+    @property
+    def is_admin(self):
+        """Alias for adviser role checks for backward compatibility."""
+        return self.is_adviser
+
+    @property
     def is_manager(self):
-        return self.role and self.role.name == Role.MANAGER
+        """Alias for president role checks for backward compatibility."""
+        return self.is_president
     
     @property
     def is_regular_user(self):
-        return self.role and self.role.name == Role.USER
+        if not self.role:
+            return True
+        return self.role.name in Role.REGULAR_ROLES
     
     class Meta:
         ordering = ['-created_at']
@@ -85,4 +152,3 @@ class AuditLog(models.Model):
     
     class Meta:
         ordering = ['-timestamp']
-

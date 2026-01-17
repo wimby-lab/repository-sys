@@ -13,9 +13,9 @@ class DocumentAccessTests(TestCase):
         self.client = Client()
         
         # Create roles
-        self.admin_role = Role.objects.create(name=Role.ADMIN)
-        self.manager_role = Role.objects.create(name=Role.MANAGER)
-        self.user_role = Role.objects.create(name=Role.USER)
+        self.admin_role = Role.objects.create(name=Role.ADVISER)
+        self.manager_role = Role.objects.create(name=Role.PRESIDENT)
+        self.user_role = Role.objects.create(name=Role.AUDITOR)
         
         # Create users
         self.admin = User.objects.create_user(
@@ -73,20 +73,20 @@ class DocumentAccessTests(TestCase):
         self.assertTrue(can_access_document(self.user1, self.internal_doc))
         self.assertTrue(can_access_document(self.user1, self.restricted_doc))
         
-    def test_admin_can_access_all_documents(self):
-        """Test admin can access all documents"""
+    def test_adviser_can_access_all_documents(self):
+        """Test adviser can access all documents"""
         self.assertTrue(can_access_document(self.admin, self.public_doc))
         self.assertTrue(can_access_document(self.admin, self.internal_doc))
         self.assertTrue(can_access_document(self.admin, self.restricted_doc))
         
-    def test_manager_cannot_access_restricted(self):
-        """Test manager cannot access restricted documents"""
+    def test_president_cannot_access_restricted(self):
+        """Test president cannot access restricted documents"""
         self.assertTrue(can_access_document(self.manager, self.public_doc))
         self.assertTrue(can_access_document(self.manager, self.internal_doc))
         self.assertFalse(can_access_document(self.manager, self.restricted_doc))
         
-    def test_user_can_access_public_only(self):
-        """Test regular user can only access public documents by default"""
+    def test_officer_can_access_public_only(self):
+        """Test officer can only access public documents by default"""
         self.assertTrue(can_access_document(self.user2, self.public_doc))
         self.assertFalse(can_access_document(self.user2, self.internal_doc))
         self.assertFalse(can_access_document(self.user2, self.restricted_doc))
@@ -154,7 +154,7 @@ class DocumentModelTests(TestCase):
     """Test document model"""
     
     def setUp(self):
-        self.user_role = Role.objects.create(name=Role.USER)
+        self.user_role = Role.objects.create(name=Role.SECRETARY)
         self.user = User.objects.create_user(
             username='testuser',
             password='pass',
@@ -215,4 +215,3 @@ class DocumentModelTests(TestCase):
         self.assertTrue(doc.is_archived)
         self.assertEqual(doc.archived_by, self.user)
         self.assertIsNotNone(doc.archived_at)
-
