@@ -20,6 +20,7 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
+            # Roles are assigned by advisers after registration; unassigned users are treated as regular.
             user.save()
             
             log_audit(user, 'REGISTER', f'New user registered: {user.username}', request)

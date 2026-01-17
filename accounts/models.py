@@ -106,10 +106,12 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
+        """Alias for adviser role checks."""
         return self.is_adviser
 
     @property
     def is_manager(self):
+        """Alias for president role checks."""
         return self.is_president
     
     @property
