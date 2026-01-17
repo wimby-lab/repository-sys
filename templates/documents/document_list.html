@@ -58,13 +58,13 @@
 <!-- Documents List -->
 <div class="row">
     <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Document List ({{ documents_count }} total)</h5>
-                    <a href="{% url 'documents:document_upload' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> Upload New
-                    </a>
-                </div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Document List ({{ documents_count }} total)</h5>
+                <a href="{% url 'documents:document_upload' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle"></i> Upload New
+                </a>
+            </div>
             <div class="card-body">
                 {% if documents_by_section %}
                     {% for section in documents_by_section %}

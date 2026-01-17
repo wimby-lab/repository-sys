@@ -1,3 +1,7 @@
+import os
+from itertools import groupby
+from urllib.parse import quote
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,7 +14,6 @@ from .forms import DocumentUploadForm, DocumentUpdateForm, DocumentSearchForm
 from .permissions import can_access_document, get_accessible_documents
 from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
-import os
 
 
 @login_required
@@ -58,10 +61,15 @@ def document_list(request):
         if date_to:
             documents = documents.filter(created_at__lte=date_to)
 
-    documents_list = list(documents.order_by('section', '-created_at'))
+    documents = documents.order_by('section', '-created_at')
+    documents_count = documents.count()
+    section_map = {}
+    for section_value, section_documents in groupby(documents, key=lambda doc: doc.section):
+        section_map[section_value] = list(section_documents)
+
     documents_by_section = []
     for section_value, section_label in Document.SECTION_CHOICES:
-        section_documents = [doc for doc in documents_list if doc.section == section_value]
+        section_documents = section_map.get(section_value, [])
         if section_documents:
             documents_by_section.append({
                 'label': section_label,
@@ -70,7 +78,7 @@ def document_list(request):
 
     return render(request, 'documents/document_list.html', {
         'documents_by_section': documents_by_section,
-        'documents_count': len(documents_list),
+        'documents_count': documents_count,
         'form': form
     })
 
@@ -125,7 +133,7 @@ def document_detail(request, pk):
     )
     
     file_extension = document.get_file_extension()
-    if file_extension in ('.pdf',):
+    if file_extension == '.pdf':
         preview_type = 'pdf'
     elif file_extension in ('.jpg', '.jpeg', '.png'):
         preview_type = 'image'
@@ -154,9 +162,14 @@ def document_preview(request, pk):
         messages.error(request, 'You do not have permission to view this document.')
         return redirect('documents:document_list')
 
+    file_extension = document.get_file_extension()
+    if file_extension not in ('.pdf', '.jpg', '.jpeg', '.png'):
+        messages.info(request, 'Inline preview is not available for this file type.')
+        return redirect('documents:document_detail', pk=pk)
+
     if os.path.exists(document.file.path):
         response = FileResponse(document.file.open('rb'), content_type=document.file_type)
-        filename = os.path.basename(document.file.name)
+        filename = quote(os.path.basename(document.file.name))
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
 
