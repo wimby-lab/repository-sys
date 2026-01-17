@@ -1,9 +1,8 @@
 from django.contrib import admin
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.utils import timezone
-
 from accounts.models import Role, User
+from dashboard.views import get_school_year_label
 
 class AdminBrandingTests(TestCase):
     def setUp(self):
@@ -31,10 +30,7 @@ class DashboardOfficerTests(TestCase):
     def test_dashboard_shows_officers(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("dashboard:index"))
-        current_date = timezone.localtime(timezone.now())
-        school_year_start = current_date.year if current_date.month >= 6 else current_date.year - 1
-        school_year_label = f"{school_year_start}-{school_year_start + 1}"
 
-        self.assertContains(response, f"COMSOC Officers S.Y. {school_year_label}")
+        self.assertContains(response, f"COMSOC Officers S.Y. {get_school_year_label()}")
         self.assertContains(response, "President")
         self.assertContains(response, "Alex Santos")

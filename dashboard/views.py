@@ -8,6 +8,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 
+def get_school_year_label(current_date=None):
+    current_date = current_date or timezone.localtime(timezone.now())
+    school_year_start = current_date.year if current_date.month >= 6 else current_date.year - 1
+    return f"{school_year_start}-{school_year_start + 1}"
+
+
 @login_required
 def index(request):
     """Dashboard home page"""
@@ -41,9 +47,7 @@ def index(request):
     if user.is_adviser or user.is_president:
         recent_activity = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
 
-    current_date = timezone.localtime(timezone.now())
-    school_year_start = current_date.year if current_date.month >= 6 else current_date.year - 1
-    school_year_label = f"{school_year_start}-{school_year_start + 1}"
+    school_year_label = get_school_year_label()
 
     officer_roles = Role.objects.prefetch_related(
         Prefetch('users', queryset=User.objects.order_by('last_name', 'first_name', 'username'))
