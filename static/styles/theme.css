@@ -57,6 +57,9 @@
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
+
+    /* Animation */
+    --animation-duration: 0.45s;
 }
 
 /* =========================================
@@ -91,6 +94,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .content {
     flex: 1;
+    animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.1s;
+    animation-fill-mode: both;
 }
 
 /* =========================================
@@ -104,6 +110,8 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.875rem;
     font-weight: 500;
     box-shadow: var(--shadow-sm);
+    animation: fadeIn var(--animation-duration) ease;
+    animation-fill-mode: both;
 }
 
 .promo-bar a {
@@ -126,6 +134,9 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow-md);
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     padding: var(--spacing-sm) 0;
+    animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.05s;
+    animation-fill-mode: both;
 }
 
 .main-nav .navbar-brand {
@@ -624,6 +635,9 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: var(--spacing-xl);
     color: var(--text-secondary);
     font-size: 0.875rem;
+    animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.15s;
+    animation-fill-mode: both;
 }
 
 .site-footer p {
@@ -741,7 +755,18 @@ a:hover {
 }
 
 .fade-in {
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--animation-duration) ease;
+    animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .promo-bar,
+    .main-nav,
+    .content,
+    .site-footer,
+    .fade-in {
+        animation: none;
+    }
 }
 
 /* =========================================
