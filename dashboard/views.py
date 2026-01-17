@@ -51,7 +51,7 @@ def index(request):
 
     officer_roles = Role.objects.prefetch_related(
         Prefetch('users', queryset=User.objects.order_by('last_name', 'first_name', 'username'))
-    ).filter(users__isnull=False).distinct()
+    ).filter(users__isnull=False).distinct().order_by('name')
     
     context = {
         'total_documents': total_documents,
