@@ -184,6 +184,8 @@ docker-compose exec web python manage.py test documents
 
 ### User Roles & Permissions
 
+New registrations start without a role and default to officer-level access until an adviser assigns a role.
+
 #### Adviser
 - Full access to all documents
 - Can manage user roles
