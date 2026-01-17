@@ -97,12 +97,20 @@ class User(AbstractUser):
         return self.username
     
     @property
-    def is_admin(self):
+    def is_adviser(self):
         return self.role and self.role.name == Role.ADVISER
     
     @property
-    def is_manager(self):
+    def is_president(self):
         return self.role and self.role.name == Role.PRESIDENT
+
+    @property
+    def is_admin(self):
+        return self.is_adviser
+
+    @property
+    def is_manager(self):
+        return self.is_president
     
     @property
     def is_regular_user(self):

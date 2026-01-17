@@ -91,17 +91,28 @@ class RoleBasedAccessTests(TestCase):
         
     def test_role_properties(self):
         """Test role property methods"""
+        self.assertTrue(self.admin.is_adviser)
         self.assertTrue(self.admin.is_admin)
         self.assertFalse(self.admin.is_manager)
         self.assertFalse(self.admin.is_regular_user)
         
         self.assertFalse(self.manager.is_admin)
+        self.assertTrue(self.manager.is_president)
         self.assertTrue(self.manager.is_manager)
         self.assertFalse(self.manager.is_regular_user)
         
         self.assertFalse(self.user.is_admin)
         self.assertFalse(self.user.is_manager)
         self.assertTrue(self.user.is_regular_user)
+
+    def test_unassigned_user_is_regular(self):
+        """Test users without roles are treated as regular users"""
+        unassigned = User.objects.create_user(
+            username='unassigned',
+            password='pass',
+            role=None
+        )
+        self.assertTrue(unassigned.is_regular_user)
 
 
 class AuditLogTests(TestCase):

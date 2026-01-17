@@ -134,7 +134,7 @@ Each log includes:
 #### Users & Roles
 - ✓ Extended User model with role relationship
 - ✓ Role model (Adviser, President, Officers/Representatives)
-- ✓ User properties: `is_admin`, `is_manager`, `is_regular_user`
+- ✓ User properties: `is_adviser`, `is_president`, `is_regular_user` (aliases: `is_admin`, `is_manager`)
 
 #### Documents
 - ✓ Document model with full metadata
@@ -163,7 +163,7 @@ Each log includes:
 #### RBAC Tests (4)
 - ✓ Adviser can access role management
 - ✓ Regular officer cannot access role management
-- ✓ Role properties (is_admin, is_manager, is_regular_user)
+- ✓ Role properties (is_adviser, is_president, is_regular_user)
 - ✓ Audit log creation
 
 #### Document Access Tests (7)

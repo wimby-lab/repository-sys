@@ -38,7 +38,7 @@ def index(request):
     
     # Recent activity (if adviser or president)
     recent_activity = None
-    if user.is_admin or user.is_manager:
+    if user.is_adviser or user.is_president:
         recent_activity = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
     
     context = {
