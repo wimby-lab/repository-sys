@@ -115,14 +115,14 @@ Added 2 new tests:
 ✅ **Cleaner UI**: Less intimidating yellow "Archive" vs red "Delete"
 
 ### User Experience
-- Managers/Admins see "Archive" button instead of "Delete" button
+- Presidents/Advisers see "Archive" button instead of "Delete" button
 - Archive confirmation is less scary (yellow vs red, info vs warning)
 - Documents disappear from list when archived (same as deletion)
 - Clear message that archives can be restored
 
 ## Future Enhancements
 Potential future additions:
-- Admin view to see and restore archived documents
+- Adviser view to see and restore archived documents
 - Automatic permanent deletion after X days/months
 - Bulk archive/restore operations
 - Archive reasons/notes field

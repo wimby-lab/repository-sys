@@ -3,11 +3,11 @@ from django.db.models import Q
 
 def can_access_document(user, document):
     """Check if user can access a document"""
-    # Admins can access all documents
+    # Advisers can access all documents
     if user.is_admin or user.is_superuser:
         return True
     
-    # Managers can access all documents except restricted
+    # Presidents can access all documents except restricted
     if user.is_manager and document.classification != 'RESTRICTED':
         return True
     
@@ -29,10 +29,10 @@ def can_access_document(user, document):
 def get_accessible_documents(user):
     """Get queryset of documents accessible to the user"""
     if user.is_admin or user.is_superuser:
-        # Admins can see all documents
+        # Advisers can see all documents
         return Q()
     elif user.is_manager:
-        # Managers can see all except restricted
+        # Presidents can see all except restricted
         return Q(classification__in=['PUBLIC', 'INTERNAL', 'CONFIDENTIAL']) | Q(owner=user)
     else:
         # Regular users can see their own, shared with them, and public documents

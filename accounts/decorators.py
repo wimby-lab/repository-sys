@@ -4,7 +4,7 @@ from django.contrib import messages
 
 
 def admin_required(view_func):
-    """Decorator to require admin role"""
+    """Decorator to require adviser role"""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -19,7 +19,7 @@ def admin_required(view_func):
 
 
 def manager_or_admin_required(view_func):
-    """Decorator to require manager or admin role"""
+    """Decorator to require president or adviser role"""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:

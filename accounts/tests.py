@@ -8,7 +8,7 @@ class AuthenticationTests(TestCase):
     
     def setUp(self):
         self.client = Client()
-        self.user_role = Role.objects.create(name=Role.USER, description='Regular user')
+        self.user_role = Role.objects.create(name=Role.VICE_PRESIDENT, description='Vice President')
         
     def test_user_registration(self):
         """Test user can register"""
@@ -57,9 +57,9 @@ class RoleBasedAccessTests(TestCase):
     
     def setUp(self):
         self.client = Client()
-        self.admin_role = Role.objects.create(name=Role.ADMIN)
-        self.manager_role = Role.objects.create(name=Role.MANAGER)
-        self.user_role = Role.objects.create(name=Role.USER)
+        self.admin_role = Role.objects.create(name=Role.ADVISER)
+        self.manager_role = Role.objects.create(name=Role.PRESIDENT)
+        self.user_role = Role.objects.create(name=Role.AUDITOR)
         
         self.admin = User.objects.create_user(
             username='admin',
@@ -77,14 +77,14 @@ class RoleBasedAccessTests(TestCase):
             role=self.user_role
         )
         
-    def test_admin_can_access_role_management(self):
-        """Test admin can access role management"""
+    def test_adviser_can_access_role_management(self):
+        """Test adviser can access role management"""
         self.client.login(username='admin', password='pass')
         response = self.client.get(reverse('accounts:role_management'))
         self.assertEqual(response.status_code, 200)
         
-    def test_user_cannot_access_role_management(self):
-        """Test regular user cannot access role management"""
+    def test_officer_cannot_access_role_management(self):
+        """Test officer cannot access role management"""
         self.client.login(username='user', password='pass')
         response = self.client.get(reverse('accounts:role_management'))
         self.assertEqual(response.status_code, 302)  # Redirect
@@ -108,7 +108,7 @@ class AuditLogTests(TestCase):
     """Test audit logging"""
     
     def setUp(self):
-        self.user_role = Role.objects.create(name=Role.USER)
+        self.user_role = Role.objects.create(name=Role.TREASURER)
         self.user = User.objects.create_user(
             username='testuser',
             password='pass',
