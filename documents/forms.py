@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django import forms
 from django.utils.text import slugify
 from crispy_forms.helper import FormHelper
@@ -29,11 +31,72 @@ def _generate_folder_key(name):
     return key
 
 
+def _is_google_docs_url(url):
+    parsed = urlparse(url or '')
+    return parsed.scheme in ('http', 'https') and parsed.netloc == 'docs.google.com' and (
+        '/document/' in parsed.path
+    )
+
+
+def _is_google_sheets_url(url):
+    parsed = urlparse(url or '')
+    return parsed.scheme in ('http', 'https') and parsed.netloc == 'docs.google.com' and (
+        '/spreadsheets/' in parsed.path
+    )
+
+
+def _validate_google_links(form, cleaned_data, has_file):
+    google_docs_url = cleaned_data.get('google_docs_url')
+    google_sheets_url = cleaned_data.get('google_sheets_url')
+    if google_docs_url and google_sheets_url:
+        form.add_error(
+            None,
+            forms.ValidationError(
+                'Please provide either a Google Docs or Google Sheets URL, not both.',
+                code='invalid',
+            ),
+        )
+    if google_docs_url and not _is_google_docs_url(google_docs_url):
+        form.add_error(
+            'google_docs_url',
+            forms.ValidationError(
+                'Google Docs URL must be a valid docs.google.com document link.',
+                code='invalid',
+            ),
+        )
+    if google_sheets_url and not _is_google_sheets_url(google_sheets_url):
+        form.add_error(
+            'google_sheets_url',
+            forms.ValidationError(
+                'Google Sheets URL must be a valid docs.google.com spreadsheets link.',
+                code='invalid',
+            ),
+        )
+    if not has_file and not google_docs_url and not google_sheets_url:
+        form.add_error(
+            None,
+            forms.ValidationError(
+                'Please either upload a file or provide a Google Docs/Sheets URL.',
+                code='required',
+            ),
+        )
+
+
 class DocumentUploadForm(forms.ModelForm):
     """Form for uploading documents"""
     class Meta:
         model = Document
-        fields = ['title', 'description', 'file', 'classification', 'section', 'category', 'tags']
+        fields = [
+            'title',
+            'description',
+            'file',
+            'google_docs_url',
+            'google_sheets_url',
+            'classification',
+            'section',
+            'category',
+            'tags',
+        ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'tags': forms.TextInput(attrs={'placeholder': 'Enter tags separated by commas'}),
@@ -47,7 +110,12 @@ class DocumentUploadForm(forms.ModelForm):
         self.helper.add_input(Submit('submit', 'Upload Document', css_class='btn btn-primary'))
         self.fields['section'].choices = _folder_choices()
         self.fields['section'].label = 'Folder'
-    
+        self.fields['file'].required = False
+        self.fields['google_docs_url'].label = 'Google Docs URL'
+        self.fields['google_sheets_url'].label = 'Google Sheets URL'
+        self.fields['google_docs_url'].help_text = 'Paste a Google Docs link to create a linked document.'
+        self.fields['google_sheets_url'].help_text = 'Paste a Google Sheets link to create a linked document.'
+
     def clean_file(self):
         """Validate file type and size"""
         from django.conf import settings
@@ -68,12 +136,26 @@ class DocumentUploadForm(forms.ModelForm):
         
         return file
 
+    def clean(self):
+        cleaned_data = super().clean()
+        _validate_google_links(self, cleaned_data, bool(cleaned_data.get('file')))
+        return cleaned_data
+
 
 class DocumentUpdateForm(forms.ModelForm):
     """Form for updating document metadata"""
     class Meta:
         model = Document
-        fields = ['title', 'description', 'classification', 'section', 'category', 'tags']
+        fields = [
+            'title',
+            'description',
+            'google_docs_url',
+            'google_sheets_url',
+            'classification',
+            'section',
+            'category',
+            'tags',
+        ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'tags': forms.TextInput(attrs={'placeholder': 'Enter tags separated by commas'}),
@@ -86,6 +168,16 @@ class DocumentUpdateForm(forms.ModelForm):
         self.helper.add_input(Submit('submit', 'Update Document', css_class='btn btn-primary'))
         self.fields['section'].choices = _folder_choices()
         self.fields['section'].label = 'Folder'
+        self.fields['google_docs_url'].label = 'Google Docs URL'
+        self.fields['google_sheets_url'].label = 'Google Sheets URL'
+        self.fields['google_docs_url'].help_text = 'Optional Google Docs link for this document.'
+        self.fields['google_sheets_url'].help_text = 'Optional Google Sheets link for this document.'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        has_file = bool(getattr(self.instance, 'file', None))
+        _validate_google_links(self, cleaned_data, has_file)
+        return cleaned_data
 
 
 class DocumentSearchForm(forms.Form):

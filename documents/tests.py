@@ -134,6 +134,49 @@ class DocumentAccessTests(TestCase):
         document = Document.objects.get(title='Hello')
         self.assertEqual(document.file_size, 5)
         self.assertEqual(document.file_type, 'text/plain')
+
+    def test_upload_allows_google_docs_link(self):
+        """Test upload works with a Google Docs link"""
+        self.client.login(username='user1', password='pass')
+        google_link = 'https://docs.google.com/document/d/abc123/edit'
+
+        response = self.client.post(
+            reverse('documents:document_upload'),
+            {
+                'title': 'Linked Doc',
+                'description': 'Google Docs link',
+                'google_docs_url': google_link,
+                'classification': 'PUBLIC',
+                'section': 'GENERAL',
+                'category': 'General',
+                'tags': 'google',
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+        document = Document.objects.get(title='Linked Doc')
+        self.assertEqual(document.google_docs_url, google_link)
+        self.assertEqual(document.file_type, 'Google Docs')
+        self.assertEqual(document.file_size, 0)
+
+    def test_upload_rejects_invalid_google_docs_link(self):
+        """Test upload rejects non-Google Docs URLs"""
+        self.client.login(username='user1', password='pass')
+        response = self.client.post(
+            reverse('documents:document_upload'),
+            {
+                'title': 'Invalid Doc',
+                'description': 'Bad link',
+                'google_docs_url': 'https://example.com/document/123',
+                'classification': 'PUBLIC',
+                'section': 'GENERAL',
+                'category': 'General',
+                'tags': 'google',
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Google Docs URL must be a valid docs.google.com document link.')
         
     def test_archived_documents_not_in_list(self):
         """Test archived documents are not shown in document list"""

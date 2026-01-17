@@ -44,9 +44,11 @@ class Document(models.Model):
     
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to=document_upload_path)
+    file = models.FileField(upload_to=document_upload_path, blank=True, null=True)
     file_size = models.IntegerField(default=0)  # in bytes
     file_type = models.CharField(max_length=100)
+    google_docs_url = models.URLField(blank=True)
+    google_sheets_url = models.URLField(blank=True)
     
     # Metadata
     owner = models.ForeignKey(
@@ -100,6 +102,8 @@ class Document(models.Model):
     
     def get_file_extension(self):
         """Get file extension"""
+        if not self.file:
+            return ''
         return os.path.splitext(self.file.name)[1].lower()
     
     class Meta:

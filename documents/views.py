@@ -183,9 +183,16 @@ def document_upload(request):
         if form.is_valid():
             document = form.save(commit=False)
             document.owner = request.user
-            uploaded_file = form.cleaned_data['file']
-            document.file_size = uploaded_file.size
-            document.file_type = uploaded_file.content_type
+            uploaded_file = form.cleaned_data.get('file')
+            if uploaded_file:
+                document.file_size = uploaded_file.size
+                document.file_type = uploaded_file.content_type
+            else:
+                document.file_size = 0
+                if document.google_docs_url:
+                    document.file_type = 'Google Docs'
+                elif document.google_sheets_url:
+                    document.file_type = 'Google Sheets'
             document.save()
             
             log_audit(
@@ -225,13 +232,20 @@ def document_detail(request, pk):
         request
     )
     
-    file_extension = document.get_file_extension()
-    if file_extension == '.pdf':
-        preview_type = 'pdf'
-    elif file_extension in ('.jpg', '.jpeg', '.png'):
-        preview_type = 'image'
-    elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
-        preview_type = 'office'
+    if document.file:
+        file_extension = document.get_file_extension()
+        if file_extension == '.pdf':
+            preview_type = 'pdf'
+        elif file_extension in ('.jpg', '.jpeg', '.png'):
+            preview_type = 'image'
+        elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
+            preview_type = 'office'
+        else:
+            preview_type = 'unsupported'
+    elif document.google_docs_url:
+        preview_type = 'google_docs'
+    elif document.google_sheets_url:
+        preview_type = 'google_sheets'
     else:
         preview_type = 'unsupported'
 
@@ -254,6 +268,13 @@ def document_preview(request, pk):
     if not can_access_document(request.user, document):
         messages.error(request, 'You do not have permission to view this document.')
         return redirect('documents:document_list')
+
+    if not document.file:
+        messages.info(
+            request,
+            'Preview is not available for documents linked to external services like Google Docs.'
+        )
+        return redirect('documents:document_detail', pk=pk)
 
     file_extension = document.get_file_extension()
     if file_extension not in ('.pdf', '.jpg', '.jpeg', '.png'):
@@ -283,6 +304,10 @@ def document_download(request, pk):
     if not can_access_document(request.user, document):
         messages.error(request, 'You do not have permission to download this document.')
         return redirect('documents:document_list')
+
+    if not document.file:
+        messages.error(request, 'This document does not have a file to download.')
+        return redirect('documents:document_detail', pk=pk)
     
     log_audit(
         request.user,
