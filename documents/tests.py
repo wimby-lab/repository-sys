@@ -2,7 +2,8 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from accounts.models import User, Role
-from .models import Document
+from .models import Document, DocumentFolder
+from .forms import DocumentFolderForm, DocumentSearchForm
 from .permissions import can_access_document
 
 
@@ -151,7 +152,8 @@ class DocumentAccessTests(TestCase):
 
     def test_document_list_filters_by_section(self):
         """Test document list can be filtered by section"""
-        section_value = Document.SECTION_CHOICES[1][0]
+        folder = DocumentFolder.objects.get(key='GENERAL')
+        section_value = folder.key
         section_doc = Document.objects.create(
             title='Section Document',
             owner=self.user1,
@@ -167,6 +169,21 @@ class DocumentAccessTests(TestCase):
 
         self.assertContains(response, section_doc.title)
         self.assertNotContains(response, self.public_doc.title)
+
+
+class DocumentFolderTests(TestCase):
+    """Test document folder management"""
+
+    def test_folder_form_generates_key(self):
+        form = DocumentFolderForm(data={'name': 'Project Docs'})
+        self.assertTrue(form.is_valid())
+        folder = form.save()
+        self.assertEqual(folder.key, 'PROJECT_DOCS')
+
+    def test_search_form_includes_folder_choices(self):
+        folder = DocumentFolder.objects.create(key='FINANCE', name='Finance')
+        form = DocumentSearchForm()
+        self.assertIn((folder.key, folder.name), form.fields['section'].choices)
 
 
 class DocumentModelTests(TestCase):

@@ -138,6 +138,8 @@ class AuditLog(models.Model):
         ('DOCUMENT_UPDATE', 'Document Update'),
         ('DOCUMENT_DELETE', 'Document Delete'),
         ('DOCUMENT_ARCHIVE', 'Document Archive'),
+        ('DOCUMENT_FOLDER_CREATE', 'Document Folder Create'),
+        ('DOCUMENT_FOLDER_UPDATE', 'Document Folder Update'),
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='audit_logs')

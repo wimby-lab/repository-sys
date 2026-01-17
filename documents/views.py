@@ -1,5 +1,5 @@
 import os
-from itertools import groupby
+from collections import defaultdict
 from urllib.parse import quote
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,11 +7,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import FileResponse, Http404
 from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
-from .models import Document
-from .forms import DocumentUploadForm, DocumentUpdateForm, DocumentSearchForm
-from .permissions import can_access_document, get_accessible_documents
+from .models import Document, DocumentFolder
+from .forms import (
+    DocumentUploadForm,
+    DocumentUpdateForm,
+    DocumentSearchForm,
+    DocumentFolderForm,
+)
+from .permissions import can_access_document, get_accessible_documents, can_manage_folders
 from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
 
@@ -63,23 +68,110 @@ def document_list(request):
 
     documents = documents.order_by('section', '-created_at')
     documents_count = documents.count()
-    section_map = {}
-    for section_value, section_documents in groupby(documents, key=lambda doc: doc.section):
-        section_map[section_value] = list(section_documents)
+    folder_map = {folder.key: folder for folder in DocumentFolder.objects.order_by('name')}
+    section_counts = {
+        entry['section']: entry['total']
+        for entry in documents.values('section').annotate(total=Count('id'))
+    }
+    section_labels = dict(Document.SECTION_CHOICES)
+    section_map = defaultdict(list)
+    for document in documents:
+        section_map[document.section].append(document)
 
     documents_by_section = []
-    for section_value, section_label in Document.SECTION_CHOICES:
+    used_sections = set()
+    for section_value, folder in folder_map.items():
         section_documents = section_map.get(section_value, [])
         if section_documents:
             documents_by_section.append({
-                'label': section_label,
+                'label': folder.name,
                 'documents': section_documents
             })
+            used_sections.add(section_value)
+
+    for section_value, section_documents in section_map.items():
+        if section_value not in used_sections:
+            documents_by_section.append({
+                'label': section_labels.get(
+                    section_value,
+                    section_value.replace('_', ' ').title()
+                ),
+                'documents': section_documents
+            })
+
+    folders = [
+        {
+            'id': folder.id,
+            'key': folder.key,
+            'name': folder.name,
+            'document_count': section_counts.get(folder.key, 0),
+        }
+        for folder in folder_map.values()
+    ]
 
     return render(request, 'documents/document_list.html', {
         'documents_by_section': documents_by_section,
         'documents_count': documents_count,
-        'form': form
+        'form': form,
+        'folders': folders,
+        'can_manage_folders': can_manage_folders(request.user)
+    })
+
+
+@login_required
+@manager_or_admin_required
+def folder_create(request):
+    """Create a new document folder"""
+    if request.method == 'POST':
+        form = DocumentFolderForm(request.POST)
+        if form.is_valid():
+            folder = form.save()
+
+            log_audit(
+                request.user,
+                'DOCUMENT_FOLDER_CREATE',
+                f'Created folder: {folder.name}',
+                request
+            )
+
+            messages.success(request, 'Folder created successfully!')
+            return redirect('documents:document_list')
+    else:
+        form = DocumentFolderForm()
+
+    return render(request, 'documents/folder_form.html', {
+        'form': form,
+        'title': 'New Folder'
+    })
+
+
+@login_required
+@manager_or_admin_required
+def folder_update(request, pk):
+    """Update a document folder"""
+    folder = get_object_or_404(DocumentFolder, pk=pk)
+
+    if request.method == 'POST':
+        form = DocumentFolderForm(request.POST, instance=folder)
+        if form.is_valid():
+            folder = form.save()
+
+            log_audit(
+                request.user,
+                'DOCUMENT_FOLDER_UPDATE',
+                f'Updated folder: {folder.name}',
+                request
+            )
+
+            messages.success(request, 'Folder updated successfully!')
+            return redirect('documents:document_list')
+    else:
+        form = DocumentFolderForm(instance=folder)
+
+    return render(request, 'documents/folder_form.html', {
+        'form': form,
+        'title': 'Rename Folder',
+        'folder': folder
     })
 
 
