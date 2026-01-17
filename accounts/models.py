@@ -106,7 +106,9 @@ class User(AbstractUser):
     
     @property
     def is_regular_user(self):
-        return self.role and self.role.name in Role.REGULAR_ROLES
+        if not self.role:
+            return True
+        return self.role.name in Role.REGULAR_ROLES
     
     class Meta:
         ordering = ['-created_at']
