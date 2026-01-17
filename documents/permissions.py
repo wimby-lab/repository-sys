@@ -37,3 +37,8 @@ def get_accessible_documents(user):
     else:
         # Regular users can see their own, shared with them, and public documents
         return Q(owner=user) | Q(shared_with=user) | Q(classification='PUBLIC')
+
+
+def can_manage_folders(user):
+    """Check if user can manage document folders"""
+    return user.is_adviser or user.is_president or user.is_superuser

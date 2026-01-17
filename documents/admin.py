@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Document
+from .models import Document, DocumentFolder
 
 
 @admin.register(Document)
@@ -28,3 +28,9 @@ class DocumentAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(DocumentFolder)
+class DocumentFolderAdmin(admin.ModelAdmin):
+    list_display = ['name', 'key', 'created_at', 'updated_at']
+    search_fields = ['name', 'key']
