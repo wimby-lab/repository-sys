@@ -34,6 +34,22 @@
                 <p>{{ document.description|default:"No description provided" }}</p>
                 
                 <hr>
+
+                <h5>Preview</h5>
+                {% if preview_type == 'image' %}
+                    <img src="{% url 'documents:document_preview' document.pk %}" class="img-fluid border rounded" alt="{{ document.title }} preview">
+                {% elif preview_type == 'pdf' %}
+                    <iframe src="{% url 'documents:document_preview' document.pk %}" class="w-100 border rounded" style="height: 600px;" title="{{ document.title }} preview"></iframe>
+                {% else %}
+                    <div class="alert alert-secondary d-flex justify-content-between align-items-center flex-wrap">
+                        <span>Preview is not available for this file type. Please download to view.</span>
+                        <a href="{% url 'documents:document_download' document.pk %}" class="btn btn-sm btn-outline-primary mt-2 mt-sm-0">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <hr>
                 
                 <div class="row">
                     <div class="col-md-6">
@@ -42,6 +58,10 @@
                             <tr>
                                 <th width="40%">Owner:</th>
                                 <td>{{ document.owner.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>Section:</th>
+                                <td>{{ document.get_section_display }}</td>
                             </tr>
                             <tr>
                                 <th>Category:</th>
