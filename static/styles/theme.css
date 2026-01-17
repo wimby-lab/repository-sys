@@ -757,7 +757,7 @@ a:hover {
     .content,
     .site-footer,
     .fade-in {
-        animation: none;
+        animation: none !important;
     }
 }
 
