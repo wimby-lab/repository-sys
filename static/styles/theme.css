@@ -95,6 +95,7 @@ h1, h2, h3, h4, h5, h6 {
 .content {
     flex: 1;
     animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.1s;
 }
 
 /* =========================================
@@ -109,6 +110,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
     box-shadow: var(--shadow-sm);
     animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0s;
 }
 
 .promo-bar a {
@@ -132,6 +134,7 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     padding: var(--spacing-sm) 0;
     animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.05s;
 }
 
 .main-nav .navbar-brand {
@@ -631,6 +634,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-secondary);
     font-size: 0.875rem;
     animation: fadeIn var(--animation-duration) ease;
+    animation-delay: 0.15s;
 }
 
 .site-footer p {
@@ -639,6 +643,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .site-footer small {
     color: var(--text-muted);
+}
+
+.promo-bar,
+.main-nav,
+.content,
+.site-footer,
+.fade-in {
+    animation-fill-mode: both;
 }
 
 /* =========================================
@@ -757,7 +769,7 @@ a:hover {
     .content,
     .site-footer,
     .fade-in {
-        animation: none !important;
+        animation: none;
     }
 }
 
