@@ -25,4 +25,5 @@ urlpatterns = [
     
     # Role management
     path('roles/', views.role_management, name='role_management'),
+    path('users/<int:user_id>/toggle-active/', views.toggle_user_active, name='toggle_user_active'),
 ]
