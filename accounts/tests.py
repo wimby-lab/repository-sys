@@ -160,3 +160,9 @@ class AuditLogTests(TestCase):
         )
         self.assertEqual(log.user, self.user)
         self.assertEqual(log.action, 'LOGIN')
+
+    def test_audit_log_action_max_length(self):
+        """Ensure action field can store longest choice."""
+        field = AuditLog._meta.get_field('action')
+        max_choice_length = max(len(choice[0]) for choice in AuditLog.ACTION_CHOICES)
+        self.assertGreaterEqual(field.max_length, max_choice_length)
