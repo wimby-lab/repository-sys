@@ -107,6 +107,33 @@ class DocumentAccessTests(TestCase):
         self.client.login(username='user1', password='pass')
         response = self.client.get(reverse('documents:document_upload'))
         self.assertEqual(response.status_code, 200)
+
+    def test_upload_sets_file_metadata(self):
+        """Test upload stores file metadata from the uploaded file"""
+        self.client.login(username='user1', password='pass')
+        upload = SimpleUploadedFile(
+            'hello.txt',
+            b'hello',
+            content_type='text/plain'
+        )
+
+        response = self.client.post(
+            reverse('documents:document_upload'),
+            {
+                'title': 'Hello',
+                'description': 'Test upload',
+                'file': upload,
+                'classification': 'PUBLIC',
+                'section': 'GENERAL',
+                'category': 'General',
+                'tags': 'test',
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+        document = Document.objects.get(title='Hello')
+        self.assertEqual(document.file_size, 5)
+        self.assertEqual(document.file_type, 'text/plain')
         
     def test_archived_documents_not_in_list(self):
         """Test archived documents are not shown in document list"""
