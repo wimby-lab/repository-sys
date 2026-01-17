@@ -91,6 +91,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .content {
     flex: 1;
+    animation: fadeIn 0.45s ease;
 }
 
 /* =========================================
@@ -104,6 +105,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.875rem;
     font-weight: 500;
     box-shadow: var(--shadow-sm);
+    animation: fadeIn 0.4s ease;
 }
 
 .promo-bar a {
@@ -126,6 +128,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow-md);
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     padding: var(--spacing-sm) 0;
+    animation: fadeIn 0.45s ease;
 }
 
 .main-nav .navbar-brand {
@@ -624,6 +627,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: var(--spacing-xl);
     color: var(--text-secondary);
     font-size: 0.875rem;
+    animation: fadeIn 0.5s ease;
 }
 
 .site-footer p {
@@ -742,6 +746,15 @@ a:hover {
 
 .fade-in {
     animation: fadeIn 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .promo-bar,
+    .main-nav,
+    .content,
+    .site-footer {
+        animation: none;
+    }
 }
 
 /* =========================================
