@@ -183,7 +183,7 @@ def document_upload(request):
         if form.is_valid():
             document = form.save(commit=False)
             document.owner = request.user
-            uploaded_file = form.cleaned_data.get('file')
+            uploaded_file = form.cleaned_data['file']
             document.file_size = uploaded_file.size
             document.file_type = uploaded_file.content_type
             document.save()
