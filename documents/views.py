@@ -306,7 +306,7 @@ def document_detail(request, pk):
         request
     )
 
-    preview_type = 'unsupported'
+    preview_type = None
     preview_context = {
         'preview_text': '',
         'preview_rows': [],
@@ -354,7 +354,7 @@ def document_detail(request, pk):
                     preview_type = 'office'
                 else:
                     preview_type = 'unsupported'
-            except (OSError, ValueError, RuntimeError):
+            except (OSError, ValueError):
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
                     'Preview could not be generated because the file could not be read.'
@@ -367,6 +367,8 @@ def document_detail(request, pk):
         preview_type = 'google_sheets'
     else:
         preview_type = 'unsupported'
+
+    preview_type = preview_type or 'unsupported'
 
     return render(request, 'documents/document_detail.html', {
         'document': document,
