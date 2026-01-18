@@ -62,12 +62,12 @@ def _load_spreadsheet_preview(file_path):
     from openpyxl.utils.exceptions import InvalidFileException
 
     workbook = None
+    sheet_title = ''
+    rows = []
+    truncated = False
     try:
         workbook = load_workbook(file_path, read_only=True, data_only=True)
         sheet = workbook.active
-        rows = []
-        truncated = False
-
         for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
             if row_index >= PREVIEW_ROW_LIMIT:
                 truncated = True
@@ -86,13 +86,14 @@ def _load_spreadsheet_preview(file_path):
                     cell_value = f'{cell_value[:PREVIEW_CELL_LIMIT]}…'
                 row_values.append(cell_value)
             rows.append(row_values)
+        sheet_title = sheet.title
     except (InvalidFileException, OSError, ValueError) as exc:
         raise ValueError('Unable to read spreadsheet preview.') from exc
     finally:
         if workbook is not None:
             workbook.close()
 
-    return sheet.title, rows, truncated
+    return sheet_title, rows, truncated
 
 
 @login_required
@@ -361,14 +362,13 @@ def document_detail(request, pk):
                 )
         else:
             preview_context['preview_error'] = 'Document file not found for preview.'
+            preview_type = 'unsupported'
     elif document.google_docs_url:
         preview_type = 'google_docs'
     elif document.google_sheets_url:
         preview_type = 'google_sheets'
     else:
         preview_type = 'unsupported'
-
-    preview_type = preview_type or 'unsupported'
 
     return render(request, 'documents/document_detail.html', {
         'document': document,
