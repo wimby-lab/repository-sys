@@ -1,10 +1,19 @@
-from django.test import TestCase, Client
+import io
+import shutil
+import tempfile
+
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from docx import Document as DocxDocument
+from openpyxl import Workbook
 from accounts.models import User, Role
 from .models import Document, DocumentFolder
 from .forms import DocumentFolderForm, DocumentSearchForm
 from .permissions import can_access_document
+
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp()
 
 
 class DocumentAccessTests(TestCase):
@@ -254,6 +263,100 @@ class DocumentFolderTests(TestCase):
         folder = DocumentFolder.objects.create(key='FINANCE', name='Finance')
         form = DocumentSearchForm()
         self.assertIn((folder.key, folder.name), form.fields['section'].choices)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class DocumentPreviewTests(TestCase):
+    """Test document preview rendering"""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.user_role = Role.objects.create(name=Role.AUDITOR)
+        self.user = User.objects.create_user(
+            username='preview_user',
+            password='pass',
+            role=self.user_role
+        )
+        self.client = Client()
+        self.client.login(username='preview_user', password='pass')
+
+    def test_text_document_preview(self):
+        upload = SimpleUploadedFile(
+            'preview.txt',
+            b'Preview line one\nPreview line two',
+            content_type='text/plain'
+        )
+        document = Document.objects.create(
+            title='Text Preview',
+            owner=self.user,
+            classification='PUBLIC',
+            section='GENERAL',
+            file=upload,
+            file_type=upload.content_type,
+            file_size=upload.size
+        )
+
+        response = self.client.get(reverse('documents:document_detail', args=[document.pk]))
+
+        self.assertContains(response, 'Preview line one')
+        self.assertContains(response, 'Preview line two')
+
+    def test_docx_document_preview(self):
+        buffer = io.BytesIO()
+        doc = DocxDocument()
+        doc.add_paragraph('Docx preview content')
+        doc.save(buffer)
+        buffer.seek(0)
+        upload = SimpleUploadedFile(
+            'preview.docx',
+            buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        document = Document.objects.create(
+            title='Docx Preview',
+            owner=self.user,
+            classification='PUBLIC',
+            section='GENERAL',
+            file=upload,
+            file_type=upload.content_type,
+            file_size=upload.size
+        )
+
+        response = self.client.get(reverse('documents:document_detail', args=[document.pk]))
+
+        self.assertContains(response, 'Docx preview content')
+
+    def test_spreadsheet_document_preview(self):
+        buffer = io.BytesIO()
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet['A1'] = 'Header'
+        sheet['A2'] = 'Value'
+        workbook.save(buffer)
+        buffer.seek(0)
+        upload = SimpleUploadedFile(
+            'preview.xlsx',
+            buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        document = Document.objects.create(
+            title='Spreadsheet Preview',
+            owner=self.user,
+            classification='PUBLIC',
+            section='GENERAL',
+            file=upload,
+            file_type=upload.content_type,
+            file_size=upload.size
+        )
+
+        response = self.client.get(reverse('documents:document_detail', args=[document.pk]))
+
+        self.assertContains(response, 'Header')
+        self.assertContains(response, 'Value')
 
 
 class DocumentModelTests(TestCase):

@@ -21,6 +21,58 @@ from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
 
 
+PREVIEW_CHAR_LIMIT = 8000
+PREVIEW_ROW_LIMIT = 25
+PREVIEW_COLUMN_LIMIT = 10
+
+
+def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
+    if not text:
+        return '', False
+    truncated = len(text) > limit
+    return text[:limit], truncated
+
+
+def _load_text_preview(file_path):
+    with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+        content = file.read(PREVIEW_CHAR_LIMIT + 1)
+    return _truncate_text(content)
+
+
+def _load_docx_preview(file_path):
+    from docx import Document as DocxDocument
+
+    doc = DocxDocument(file_path)
+    content = '\n'.join(
+        paragraph.text for paragraph in doc.paragraphs if paragraph.text
+    )
+    return _truncate_text(content)
+
+
+def _load_spreadsheet_preview(file_path):
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(file_path, read_only=True, data_only=True)
+    sheet = workbook.active
+    rows = []
+    truncated = False
+
+    for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
+        if row_index >= PREVIEW_ROW_LIMIT:
+            truncated = True
+            break
+        row_values = []
+        for col_index, cell in enumerate(row):
+            if col_index >= PREVIEW_COLUMN_LIMIT:
+                truncated = True
+                break
+            row_values.append('' if cell is None else str(cell))
+        rows.append(row_values)
+
+    workbook.close()
+    return sheet.title, rows, truncated
+
+
 @login_required
 def document_list(request):
     """List documents with search and filter"""
@@ -231,17 +283,59 @@ def document_detail(request, pk):
         f'Viewed document: {document.title}',
         request
     )
-    
+
+    preview_type = 'unsupported'
+    preview_context = {
+        'preview_text': '',
+        'preview_rows': [],
+        'preview_sheet_name': '',
+        'preview_truncated': False,
+        'preview_error': '',
+    }
+
     if document.file:
         file_extension = document.get_file_extension()
-        if file_extension == '.pdf':
-            preview_type = 'pdf'
-        elif file_extension in ('.jpg', '.jpeg', '.png'):
-            preview_type = 'image'
-        elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
-            preview_type = 'office'
+        if os.path.exists(document.file.path):
+            try:
+                if file_extension == '.pdf':
+                    preview_type = 'pdf'
+                elif file_extension in ('.jpg', '.jpeg', '.png'):
+                    preview_type = 'image'
+                elif file_extension in ('.txt', '.csv', '.log'):
+                    preview_type = 'text'
+                    preview_text, preview_truncated = _load_text_preview(document.file.path)
+                    preview_context.update({
+                        'preview_text': preview_text,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension == '.docx':
+                    preview_type = 'text'
+                    preview_text, preview_truncated = _load_docx_preview(document.file.path)
+                    preview_context.update({
+                        'preview_text': preview_text,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension == '.xlsx':
+                    preview_type = 'spreadsheet'
+                    sheet_name, preview_rows, preview_truncated = _load_spreadsheet_preview(
+                        document.file.path
+                    )
+                    preview_context.update({
+                        'preview_sheet_name': sheet_name,
+                        'preview_rows': preview_rows,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension in ('.doc', '.xls'):
+                    preview_type = 'office'
+                else:
+                    preview_type = 'unsupported'
+            except Exception:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview could not be generated for this file.'
+                )
         else:
-            preview_type = 'unsupported'
+            preview_context['preview_error'] = 'Document file not found for preview.'
     elif document.google_docs_url:
         preview_type = 'google_docs'
     elif document.google_sheets_url:
@@ -251,7 +345,8 @@ def document_detail(request, pk):
 
     return render(request, 'documents/document_detail.html', {
         'document': document,
-        'preview_type': preview_type
+        'preview_type': preview_type,
+        **preview_context
     })
 
 
