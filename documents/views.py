@@ -34,15 +34,22 @@ def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
 
 
 def _load_text_preview(file_path):
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
-        content = file.read(PREVIEW_CHAR_LIMIT + 1)
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            content = file.read(PREVIEW_CHAR_LIMIT + 1)
+    except (OSError, UnicodeError) as exc:
+        raise ValueError('Unable to read text preview.') from exc
     return _truncate_text(content)
 
 
 def _load_docx_preview(file_path):
     from docx import Document as DocxDocument
+    from docx.opc.exceptions import PackageNotFoundError
 
-    doc = DocxDocument(file_path)
+    try:
+        doc = DocxDocument(file_path)
+    except (PackageNotFoundError, OSError, ValueError) as exc:
+        raise ValueError('Unable to read Word document preview.') from exc
     content = '\n'.join(
         paragraph.text for paragraph in doc.paragraphs if paragraph.text
     )
@@ -51,25 +58,32 @@ def _load_docx_preview(file_path):
 
 def _load_spreadsheet_preview(file_path):
     from openpyxl import load_workbook
+    from openpyxl.utils.exceptions import InvalidFileException
 
-    workbook = load_workbook(file_path, read_only=True, data_only=True)
-    sheet = workbook.active
-    rows = []
-    truncated = False
+    workbook = None
+    try:
+        workbook = load_workbook(file_path, read_only=True, data_only=True)
+        sheet = workbook.active
+        rows = []
+        truncated = False
 
-    for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
-        if row_index >= PREVIEW_ROW_LIMIT:
-            truncated = True
-            break
-        row_values = []
-        for col_index, cell in enumerate(row):
-            if col_index >= PREVIEW_COLUMN_LIMIT:
+        for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
+            if row_index >= PREVIEW_ROW_LIMIT:
                 truncated = True
                 break
-            row_values.append('' if cell is None else str(cell))
-        rows.append(row_values)
+            row_values = []
+            for col_index, cell in enumerate(row):
+                if col_index >= PREVIEW_COLUMN_LIMIT:
+                    truncated = True
+                    break
+                row_values.append('' if cell is None else str(cell))
+            rows.append(row_values)
+    except (InvalidFileException, OSError, ValueError) as exc:
+        raise ValueError('Unable to read spreadsheet preview.') from exc
+    finally:
+        if workbook is not None:
+            workbook.close()
 
-    workbook.close()
     return sheet.title, rows, truncated
 
 
@@ -329,7 +343,7 @@ def document_detail(request, pk):
                     preview_type = 'office'
                 else:
                     preview_type = 'unsupported'
-            except Exception:
+            except (OSError, ValueError, RuntimeError):
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
                     'Preview could not be generated for this file.'
