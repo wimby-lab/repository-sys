@@ -13,9 +13,6 @@ from .forms import DocumentFolderForm, DocumentSearchForm
 from .permissions import can_access_document
 
 
-TEMP_MEDIA_ROOT = tempfile.mkdtemp()
-
-
 class DocumentAccessTests(TestCase):
     """Test document access control"""
     
@@ -265,14 +262,21 @@ class DocumentFolderTests(TestCase):
         self.assertIn((folder.key, folder.name), form.fields['section'].choices)
 
 
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class DocumentPreviewTests(TestCase):
     """Test document preview rendering"""
 
     @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.temp_media_root = tempfile.mkdtemp()
+        cls.override_media = override_settings(MEDIA_ROOT=cls.temp_media_root)
+        cls.override_media.enable()
+
+    @classmethod
     def tearDownClass(cls):
+        cls.override_media.disable()
+        shutil.rmtree(cls.temp_media_root, ignore_errors=True)
         super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.user_role = Role.objects.create(name=Role.AUDITOR)

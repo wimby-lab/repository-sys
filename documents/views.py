@@ -20,6 +20,10 @@ from .forms import (
 from .permissions import can_access_document, get_accessible_documents, can_manage_folders
 from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
+from docx import Document as DocxDocument
+from docx.opc.exceptions import PackageNotFoundError
+from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 
 
 PREVIEW_CHAR_LIMIT = 8000
@@ -31,6 +35,14 @@ PREVIEW_MAX_FILE_SIZE = 5 * 1024 * 1024
 
 class PreviewError(Exception):
     """Raised when a preview cannot be generated."""
+
+
+def _render_document_detail(request, document, preview_type, preview_context):
+    return render(request, 'documents/document_detail.html', {
+        'document': document,
+        'preview_type': preview_type,
+        **preview_context
+    })
 
 
 def _is_safe_media_path(file_path):
@@ -58,9 +70,6 @@ def _load_text_preview(file_path):
 
 
 def _load_docx_preview(file_path):
-    from docx import Document as DocxDocument
-    from docx.opc.exceptions import PackageNotFoundError
-
     try:
         doc = DocxDocument(file_path)
     except (PackageNotFoundError, OSError, ValueError) as exc:
@@ -72,9 +81,6 @@ def _load_docx_preview(file_path):
 
 
 def _load_spreadsheet_preview(file_path):
-    from openpyxl import load_workbook
-    from openpyxl.utils.exceptions import InvalidFileException
-
     workbook = None
     sheet_title = ''
     rows = []
@@ -97,7 +103,12 @@ def _load_spreadsheet_preview(file_path):
                 if cell is None:
                     row_values.append('')
                     continue
-                cell_value = str(cell)
+                try:
+                    cell_value = str(cell)
+                except Exception:
+                    truncated = True
+                    cell_value = ''
+                cell_value = ''.join(ch for ch in cell_value if ch.isprintable())
                 if len(cell_value) > PREVIEW_CELL_LIMIT:
                     truncated = True
                     cell_value = f'{cell_value[:PREVIEW_CELL_LIMIT]}…'
@@ -342,22 +353,14 @@ def document_detail(request, pk):
             if not _is_safe_media_path(document.file.path):
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = 'Preview is unavailable for this file.'
-                return render(request, 'documents/document_detail.html', {
-                    'document': document,
-                    'preview_type': preview_type,
-                    **preview_context
-                })
+                return _render_document_detail(request, document, preview_type, preview_context)
             file_size = document.file_size or document.file.size
             if file_size > PREVIEW_MAX_FILE_SIZE:
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
                     'Preview is available for files up to 5 MB. Please download to view.'
                 )
-                return render(request, 'documents/document_detail.html', {
-                    'document': document,
-                    'preview_type': preview_type,
-                    **preview_context
-                })
+                return _render_document_detail(request, document, preview_type, preview_context)
             try:
                 if file_extension == '.pdf':
                     preview_type = 'pdf'
@@ -411,11 +414,7 @@ def document_detail(request, pk):
     else:
         preview_type = 'unsupported'
 
-    return render(request, 'documents/document_detail.html', {
-        'document': document,
-        'preview_type': preview_type,
-        **preview_context
-    })
+    return _render_document_detail(request, document, preview_type, preview_context)
 
 
 @login_required
