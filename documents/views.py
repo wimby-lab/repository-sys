@@ -25,6 +25,11 @@ PREVIEW_CHAR_LIMIT = 8000
 PREVIEW_ROW_LIMIT = 25
 PREVIEW_COLUMN_LIMIT = 10
 PREVIEW_CELL_LIMIT = 200
+PREVIEW_MAX_FILE_SIZE = 5 * 1024 * 1024
+
+
+class PreviewError(Exception):
+    """Raised when a preview cannot be generated."""
 
 
 def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
@@ -39,7 +44,7 @@ def _load_text_preview(file_path):
         with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
             content = file.read(PREVIEW_CHAR_LIMIT + 1)
     except (OSError, UnicodeError) as exc:
-        raise ValueError('Unable to read text preview.') from exc
+        raise PreviewError('Unable to read text preview.') from exc
     return _truncate_text(content)
 
 
@@ -50,7 +55,7 @@ def _load_docx_preview(file_path):
     try:
         doc = DocxDocument(file_path)
     except (PackageNotFoundError, OSError, ValueError) as exc:
-        raise ValueError('Unable to read Word document preview.') from exc
+        raise PreviewError('Unable to read Word document preview.') from exc
     content = '\n'.join(
         paragraph.text for paragraph in doc.paragraphs if paragraph.text
     )
@@ -68,15 +73,16 @@ def _load_spreadsheet_preview(file_path):
     try:
         workbook = load_workbook(file_path, read_only=True, data_only=True)
         sheet = workbook.active
-        for row_index, row in enumerate(sheet.iter_rows(values_only=True)):
-            if row_index >= PREVIEW_ROW_LIMIT:
-                truncated = True
-                break
+        truncated = (
+            sheet.max_row > PREVIEW_ROW_LIMIT or sheet.max_column > PREVIEW_COLUMN_LIMIT
+        )
+        for row in sheet.iter_rows(
+            values_only=True,
+            max_row=PREVIEW_ROW_LIMIT,
+            max_col=PREVIEW_COLUMN_LIMIT,
+        ):
             row_values = []
-            for col_index, cell in enumerate(row):
-                if col_index >= PREVIEW_COLUMN_LIMIT:
-                    truncated = True
-                    break
+            for cell in row:
                 if cell is None:
                     row_values.append('')
                     continue
@@ -88,7 +94,7 @@ def _load_spreadsheet_preview(file_path):
             rows.append(row_values)
         sheet_title = sheet.title
     except (InvalidFileException, OSError, ValueError) as exc:
-        raise ValueError('Unable to read spreadsheet preview.') from exc
+        raise PreviewError('Unable to read spreadsheet preview.') from exc
     finally:
         if workbook is not None:
             workbook.close()
@@ -322,6 +328,17 @@ def document_detail(request, pk):
     if document.file:
         file_extension = document.get_file_extension()
         if os.path.exists(document.file.path):
+            file_size = document.file_size or document.file.size
+            if file_size > PREVIEW_MAX_FILE_SIZE:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview is available for files up to 5 MB. Please download to view.'
+                )
+                return render(request, 'documents/document_detail.html', {
+                    'document': document,
+                    'preview_type': preview_type,
+                    **preview_context
+                })
             try:
                 if file_extension == '.pdf':
                     preview_type = 'pdf'
@@ -355,7 +372,7 @@ def document_detail(request, pk):
                     preview_type = 'office'
                 else:
                     preview_type = 'unsupported'
-            except (OSError, ValueError):
+            except (OSError, PreviewError):
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
                     'Preview could not be generated because the file could not be read.'
