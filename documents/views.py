@@ -1,7 +1,9 @@
 import os
+import re
 from collections import defaultdict
 from urllib.parse import quote
 
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -19,6 +21,109 @@ from .forms import (
 from .permissions import can_access_document, get_accessible_documents, can_manage_folders
 from accounts.utils import log_audit
 from accounts.decorators import manager_or_admin_required
+from docx import Document as DocxDocument
+from docx.opc.exceptions import PackageNotFoundError
+from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
+
+
+PREVIEW_CHAR_LIMIT = 8000
+PREVIEW_ROW_LIMIT = 25
+PREVIEW_COLUMN_LIMIT = 10
+PREVIEW_CELL_LIMIT = 200
+PREVIEW_MAX_FILE_SIZE = 5 * 1024 * 1024
+CONTROL_CHAR_PATTERN = re.compile(r'[\x00-\x1F\x7F]')
+
+
+class PreviewError(Exception):
+    """Raised when a preview cannot be generated."""
+
+
+def _render_document_detail(request, document, preview_type, preview_context):
+    return render(request, 'documents/document_detail.html', {
+        'document': document,
+        'preview_type': preview_type,
+        **preview_context
+    })
+
+
+def _is_safe_media_path(file_path):
+    media_root = os.path.abspath(settings.MEDIA_ROOT)
+    try:
+        return os.path.commonpath([os.path.abspath(file_path), media_root]) == media_root
+    except ValueError:
+        return False
+
+
+def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
+    if not text:
+        return '', False
+    truncated = len(text) > limit
+    return text[:limit], truncated
+
+
+def _load_text_preview(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            content = file.read(PREVIEW_CHAR_LIMIT + 1)
+    except (OSError, UnicodeError) as exc:
+        raise PreviewError('Unable to read text preview.') from exc
+    return _truncate_text(content)
+
+
+def _load_docx_preview(file_path):
+    try:
+        doc = DocxDocument(file_path)
+    except (PackageNotFoundError, OSError, ValueError) as exc:
+        raise PreviewError('Unable to read Word document preview.') from exc
+    content = '\n'.join(
+        paragraph.text for paragraph in doc.paragraphs if paragraph.text
+    )
+    return _truncate_text(content)
+
+
+def _load_spreadsheet_preview(file_path):
+    workbook = None
+    sheet_title = ''
+    rows = []
+    truncated = False
+    try:
+        workbook = load_workbook(file_path, read_only=True, data_only=True)
+        sheet = workbook.active
+        for row_index, row in enumerate(sheet.iter_rows(
+            values_only=True,
+            max_row=PREVIEW_ROW_LIMIT + 1,
+            max_col=PREVIEW_COLUMN_LIMIT + 1,
+        )):
+            if row_index >= PREVIEW_ROW_LIMIT:
+                truncated = True
+                break
+            row_values = []
+            if len(row) > PREVIEW_COLUMN_LIMIT:
+                truncated = True
+            for cell in row[:PREVIEW_COLUMN_LIMIT]:
+                if cell is None:
+                    row_values.append('')
+                    continue
+                try:
+                    cell_value = str(cell)
+                except (TypeError, ValueError):
+                    truncated = True
+                    cell_value = ''
+                cell_value = CONTROL_CHAR_PATTERN.sub('', cell_value)
+                if len(cell_value) > PREVIEW_CELL_LIMIT:
+                    truncated = True
+                    cell_value = f'{cell_value[:PREVIEW_CELL_LIMIT]}…'
+                row_values.append(cell_value)
+            rows.append(row_values)
+        sheet_title = sheet.title
+    except (InvalidFileException, OSError, ValueError) as exc:
+        raise PreviewError('Unable to read spreadsheet preview.') from exc
+    finally:
+        if workbook is not None:
+            workbook.close()
+
+    return sheet_title, rows, truncated
 
 
 @login_required
@@ -231,16 +336,78 @@ def document_detail(request, pk):
         f'Viewed document: {document.title}',
         request
     )
-    
+
+    preview_type = None
+    preview_context = {
+        'preview_text': '',
+        'preview_rows': [],
+        'preview_sheet_name': '',
+        'preview_truncated': False,
+        'preview_error': '',
+        'preview_char_limit': PREVIEW_CHAR_LIMIT,
+        'preview_row_limit': PREVIEW_ROW_LIMIT,
+        'preview_column_limit': PREVIEW_COLUMN_LIMIT,
+    }
+
     if document.file:
         file_extension = document.get_file_extension()
-        if file_extension == '.pdf':
-            preview_type = 'pdf'
-        elif file_extension in ('.jpg', '.jpeg', '.png'):
-            preview_type = 'image'
-        elif file_extension in ('.doc', '.docx', '.xls', '.xlsx'):
-            preview_type = 'office'
+        if os.path.exists(document.file.path):
+            if not _is_safe_media_path(document.file.path):
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = 'Preview is unavailable for this file.'
+                return _render_document_detail(request, document, preview_type, preview_context)
+            file_size = document.file_size or document.file.size
+            if file_size > PREVIEW_MAX_FILE_SIZE:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview is available for files up to 5 MB. Please download to view.'
+                )
+                return _render_document_detail(request, document, preview_type, preview_context)
+            try:
+                if file_extension == '.pdf':
+                    preview_type = 'pdf'
+                elif file_extension in ('.jpg', '.jpeg', '.png'):
+                    preview_type = 'image'
+                elif file_extension in ('.txt', '.csv', '.log'):
+                    preview_type = 'text'
+                    preview_text, preview_truncated = _load_text_preview(document.file.path)
+                    preview_context.update({
+                        'preview_text': preview_text,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension == '.docx':
+                    preview_type = 'text'
+                    preview_text, preview_truncated = _load_docx_preview(document.file.path)
+                    preview_context.update({
+                        'preview_text': preview_text,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension == '.xlsx':
+                    preview_type = 'spreadsheet'
+                    sheet_name, preview_rows, preview_truncated = _load_spreadsheet_preview(
+                        document.file.path
+                    )
+                    preview_context.update({
+                        'preview_sheet_name': sheet_name,
+                        'preview_rows': preview_rows,
+                        'preview_truncated': preview_truncated,
+                    })
+                elif file_extension in ('.doc', '.xls'):
+                    preview_type = 'office'
+                else:
+                    preview_type = 'unsupported'
+            except PreviewError:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview could not be generated because the file contents could not be read.'
+                )
+            except OSError:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview could not be generated because the file could not be accessed.'
+                )
         else:
+            preview_context['preview_error'] = 'Document file not found for preview.'
             preview_type = 'unsupported'
     elif document.google_docs_url:
         preview_type = 'google_docs'
@@ -249,10 +416,7 @@ def document_detail(request, pk):
     else:
         preview_type = 'unsupported'
 
-    return render(request, 'documents/document_detail.html', {
-        'document': document,
-        'preview_type': preview_type
-    })
+    return _render_document_detail(request, document, preview_type, preview_context)
 
 
 @login_required
