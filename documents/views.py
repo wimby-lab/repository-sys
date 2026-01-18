@@ -24,6 +24,7 @@ from accounts.decorators import manager_or_admin_required
 PREVIEW_CHAR_LIMIT = 8000
 PREVIEW_ROW_LIMIT = 25
 PREVIEW_COLUMN_LIMIT = 10
+PREVIEW_CELL_LIMIT = 200
 
 
 def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
@@ -76,7 +77,14 @@ def _load_spreadsheet_preview(file_path):
                 if col_index >= PREVIEW_COLUMN_LIMIT:
                     truncated = True
                     break
-                row_values.append('' if cell is None else str(cell))
+                if cell is None:
+                    row_values.append('')
+                    continue
+                cell_value = str(cell)
+                if len(cell_value) > PREVIEW_CELL_LIMIT:
+                    truncated = True
+                    cell_value = f'{cell_value[:PREVIEW_CELL_LIMIT]}…'
+                row_values.append(cell_value)
             rows.append(row_values)
     except (InvalidFileException, OSError, ValueError) as exc:
         raise ValueError('Unable to read spreadsheet preview.') from exc
@@ -305,6 +313,9 @@ def document_detail(request, pk):
         'preview_sheet_name': '',
         'preview_truncated': False,
         'preview_error': '',
+        'preview_char_limit': PREVIEW_CHAR_LIMIT,
+        'preview_row_limit': PREVIEW_ROW_LIMIT,
+        'preview_column_limit': PREVIEW_COLUMN_LIMIT,
     }
 
     if document.file:
@@ -346,7 +357,7 @@ def document_detail(request, pk):
             except (OSError, ValueError, RuntimeError):
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
-                    'Preview could not be generated for this file.'
+                    'Preview could not be generated because the file could not be read.'
                 )
         else:
             preview_context['preview_error'] = 'Document file not found for preview.'

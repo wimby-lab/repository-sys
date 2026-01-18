@@ -74,7 +74,7 @@
                         <div class="alert alert-secondary">No text content available for preview.</div>
                     {% endif %}
                     {% if preview_truncated %}
-                        <div class="text-muted small mt-2">Preview truncated to the first {{ preview_text|length }} characters.</div>
+                        <div class="text-muted small mt-2">Preview truncated to the first {{ preview_char_limit }} characters.</div>
                     {% endif %}
                 {% elif preview_type == 'spreadsheet' %}
                     {% if preview_rows %}
@@ -96,7 +96,7 @@
                         <div class="alert alert-secondary">No spreadsheet data available for preview.</div>
                     {% endif %}
                     {% if preview_truncated %}
-                        <div class="text-muted small mt-2">Preview truncated to the first {{ preview_rows|length }} rows.</div>
+                        <div class="text-muted small mt-2">Preview truncated for readability ({{ preview_row_limit }} rows, {{ preview_column_limit }} columns max).</div>
                     {% endif %}
                 {% elif preview_type == 'office' %}
                     <div class="alert alert-secondary d-flex justify-content-between align-items-center flex-wrap">
