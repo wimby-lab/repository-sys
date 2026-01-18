@@ -1,4 +1,5 @@
 import os
+import re
 from collections import defaultdict
 from urllib.parse import quote
 
@@ -31,6 +32,7 @@ PREVIEW_ROW_LIMIT = 25
 PREVIEW_COLUMN_LIMIT = 10
 PREVIEW_CELL_LIMIT = 200
 PREVIEW_MAX_FILE_SIZE = 5 * 1024 * 1024
+CONTROL_CHAR_PATTERN = re.compile(r'[\x00-\x1F\x7F]')
 
 
 class PreviewError(Exception):
@@ -105,10 +107,10 @@ def _load_spreadsheet_preview(file_path):
                     continue
                 try:
                     cell_value = str(cell)
-                except Exception:
+                except (TypeError, ValueError):
                     truncated = True
                     cell_value = ''
-                cell_value = ''.join(ch for ch in cell_value if ch.isprintable())
+                cell_value = CONTROL_CHAR_PATTERN.sub('', cell_value)
                 if len(cell_value) > PREVIEW_CELL_LIMIT:
                     truncated = True
                     cell_value = f'{cell_value[:PREVIEW_CELL_LIMIT]}…'
