@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 from urllib.parse import quote
 
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -30,6 +31,14 @@ PREVIEW_MAX_FILE_SIZE = 5 * 1024 * 1024
 
 class PreviewError(Exception):
     """Raised when a preview cannot be generated."""
+
+
+def _is_safe_media_path(file_path):
+    media_root = os.path.abspath(settings.MEDIA_ROOT)
+    try:
+        return os.path.commonpath([os.path.abspath(file_path), media_root]) == media_root
+    except ValueError:
+        return False
 
 
 def _truncate_text(text, limit=PREVIEW_CHAR_LIMIT):
@@ -73,16 +82,18 @@ def _load_spreadsheet_preview(file_path):
     try:
         workbook = load_workbook(file_path, read_only=True, data_only=True)
         sheet = workbook.active
-        truncated = (
-            sheet.max_row > PREVIEW_ROW_LIMIT or sheet.max_column > PREVIEW_COLUMN_LIMIT
-        )
-        for row in sheet.iter_rows(
+        for row_index, row in enumerate(sheet.iter_rows(
             values_only=True,
-            max_row=PREVIEW_ROW_LIMIT,
-            max_col=PREVIEW_COLUMN_LIMIT,
-        ):
+            max_row=PREVIEW_ROW_LIMIT + 1,
+            max_col=PREVIEW_COLUMN_LIMIT + 1,
+        )):
+            if row_index >= PREVIEW_ROW_LIMIT:
+                truncated = True
+                break
             row_values = []
-            for cell in row:
+            if len(row) > PREVIEW_COLUMN_LIMIT:
+                truncated = True
+            for cell in row[:PREVIEW_COLUMN_LIMIT]:
                 if cell is None:
                     row_values.append('')
                     continue
@@ -328,6 +339,14 @@ def document_detail(request, pk):
     if document.file:
         file_extension = document.get_file_extension()
         if os.path.exists(document.file.path):
+            if not _is_safe_media_path(document.file.path):
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = 'Preview is unavailable for this file.'
+                return render(request, 'documents/document_detail.html', {
+                    'document': document,
+                    'preview_type': preview_type,
+                    **preview_context
+                })
             file_size = document.file_size or document.file.size
             if file_size > PREVIEW_MAX_FILE_SIZE:
                 preview_type = 'unsupported'
@@ -372,10 +391,15 @@ def document_detail(request, pk):
                     preview_type = 'office'
                 else:
                     preview_type = 'unsupported'
-            except (OSError, PreviewError):
+            except PreviewError:
                 preview_type = 'unsupported'
                 preview_context['preview_error'] = (
-                    'Preview could not be generated because the file could not be read.'
+                    'Preview could not be generated because the file contents could not be read.'
+                )
+            except OSError:
+                preview_type = 'unsupported'
+                preview_context['preview_error'] = (
+                    'Preview could not be generated because the file could not be accessed.'
                 )
         else:
             preview_context['preview_error'] = 'Document file not found for preview.'
